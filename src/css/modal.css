@@ -1,0 +1,123 @@
+/**
+ Show and hide a modal based on a body CSS class.
+ When the "has-modal" class is present, the modal will
+ change from display none to display block.
+*/
+
+.has-modal #modal,
+.has-modal #modal-backdrop {
+	display: block;	
+}
+
+#modal-content {
+	color: #666;
+}
+
+#modal-backdrop {
+	display:none;
+	position:absolute;
+	top:0;
+	left:0;
+	margin:0;
+	padding:0;
+	background-color:rgba(0,0,0,0.1);
+	width:100%;
+	height:100%;
+	z-index:10;
+}
+
+#ors-statutes {
+	padding:15px;
+}
+
+#ors-toc {
+	padding-right: 30px;
+}
+
+#ors-toc li {
+	list-style-type: none;
+}
+
+#ors-toc li a {
+	text-decoration: none;
+	display: inline-block;
+	width:100%;
+	height: 100%;
+	padding: 4px;
+}
+
+
+
+#modal-title-bar {
+	padding: 5px;
+	padding-bottom: 25px;
+}
+
+#modal {
+	display:none;
+	background-color: #fff;
+	position: fixed;
+	top:0px;
+	left:0px;
+	border-radius: 5px;
+	box-shadow: 1px 1px 30px 5px rgba(0,0,0,0.1);
+	z-index: 999;
+	height: 100vh;
+}
+
+#modal-container {
+	padding: 30px;
+	position: relative;
+}
+
+#modal-content {
+	position: relative;
+	font-family: Helvetica;	
+}
+
+
+
+  
+#modal-content a,
+#modal-content a:link,
+#modal-content a:active,
+#modal-content a:visited {
+	color: #0774b6;
+}
+
+#ors-toc {
+	height: 100vh;
+}
+
+#ors-statutes {
+	height: 100vh;
+}
+
+
+#context-menu-container {
+	z-index: 1;
+}
+
+#context-menu {
+	height:160px;
+	background-color:teal;
+	max-width:215px;
+	min-width:200px;
+	z-index:1;
+}
+
+#positioned-context-container {
+	position:absolute;
+	display:none;
+	background-color:rgba(255,255,255,0.9);
+	border:1px solid #efefef;
+	padding:6px;
+	min-width:400px;
+	min-height:250px;
+	z-index:2;
+	margin-top:-125px;
+}
+
+#positioned-context-container.visible {
+	display:block;
+}
