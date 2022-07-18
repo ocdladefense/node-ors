@@ -4,11 +4,13 @@ function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableTo
 
 function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
 
-function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
-
 function _iterableToArray(iter) { if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter); }
 
 function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) return _arrayLikeToArray(arr); }
+
+function _createForOfIteratorHelper(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it["return"] != null) it["return"](); } finally { if (didErr) throw err; } } }; }
+
+function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
 
 function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
 
@@ -18,123 +20,144 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf ? Object.setPrototypeOf.bind() : function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
 
-var patterns = [/*#__PURE__*/_wrapRegExp(/ORS\s+(\d+)\.(\d+)(?:\s?\(([0-9a-zA-Z]{1,3})\))*/g, {
-  chapter: 1,
-  section: 2,
-  subsection: 3
-}),
-/*#__PURE__*/
-// /ORS\s+(?<chapter>\d+)\.(?<section>\d+)/g,
-// /(?<!ORS\s+\d+)((?<chapter>\d+)\.(?<section>\d+))/g
-_wrapRegExp(/(?:\d{4}\s)*c\.(\d+)\s+\xA7+(\d+,*\s?)+/g, {
-  chapter: 1,
-  section: 2
-})];
-var replacers = [];
+export { OrsParser };
 
-var replacer = function replacer(match, p1, p2, offset, string, g) {
-  // console.log(arguments);
-  var length = arguments.length - 3;
-  var memorized = Array.prototype.slice.call(arguments, length);
-  var groups = memorized.pop(); // console.log(groups);
-
-  var subsection = groups.subsection ? "(".concat(groups.subsection, ")") : "";
-  var link = "<a href=\"#\" data-action=\"show-ors\" data-chapter=\"".concat(groups.chapter, "\" data-section=\"").concat(groups.section, "\" data-subsection=\"").concat(subsection, "\">ORS ").concat(groups.chapter, ".").concat(groups.section).concat(subsection, "</a>");
-  return link;
-};
-
-function replaceAll(text) {
-  // let regexp = /ORS\s+(\d{3})/g;
-  for (var _i = 0, _patterns = patterns; _i < _patterns.length; _i++) {
-    var regexp = _patterns[_i];
-    text = text.replaceAll(regexp, replacer); // console.log(text);
-  }
-
-  return text;
-}
-
-function parseOrs(text) {
-  var linked = replaceAll(text); // "123.123&nbsp;&nbsp;&nbsp;&nbsp;"
-
-  var foo = linked.replaceAll( /*#__PURE__*/_wrapRegExp(/(\d{3})\.(\d{3})(\s{4,})/g, {
+var OrsParser = function () {
+  var proto = {};
+  var patterns = [/*#__PURE__*/_wrapRegExp(/ORS\s+(\d+)\.(\d+)(?:\s?\(([0-9a-zA-Z]{1,3})\))*/g, {
     chapter: 1,
     section: 2,
-    spaces: 3
-  }), function (match, p1, p2, p3, offset, string, groups) {
-    return "<a href=\"#".concat(groups.chapter, ".").concat(groups.section, "\" data-action=\"ors-nav\" data-chapter=\"").concat(groups.chapter, "\" data-section=\"").concat(groups.section, "\">").concat(groups.chapter, ".").concat(groups.section, "</a>").concat(groups.spaces);
-  });
-  return foo;
-}
-
-function matchAll() {
-  var regexp = /*#__PURE__*/_wrapRegExp(/ORS\s+(\d{3})\.(\d{3})/g, {
+    subsection: 3
+  }),
+  /*#__PURE__*/
+  // /ORS\s+(?<chapter>\d+)\.(?<section>\d+)/g,
+  // /(?<!ORS\s+\d+)((?<chapter>\d+)\.(?<section>\d+))/g
+  _wrapRegExp(/(?:\d{4}\s)*c\.(\d+)\s+\xA7+(\d+,*\s?)+/g, {
     chapter: 1,
     section: 2
-  }); // let foo = "ORS 123.123".matchAll(regexp);
+  })];
+  var replacers = [];
 
+  var replacer = function replacer(match, p1, p2, offset, string, g) {
+    // console.log(arguments);
+    var length = arguments.length - 3;
+    var memorized = Array.prototype.slice.call(arguments, length);
+    var groups = memorized.pop(); // console.log(groups);
 
-  var foo = "1987 c.833 §3; 1989 c.453 §2; 1993 c.186 §4; 1995 c.102 §1; 1999 c.448 §1; 1999 c.599 §1; 2021 c.539 §109".matchAll(/\d{4}\s+c\.\d{3}\s+§\d+/g);
+    var subsection = groups.subsection ? "(".concat(groups.subsection, ")") : "";
+    var link = "<a href=\"#\" data-action=\"show-ors\" data-chapter=\"".concat(groups.chapter, "\" data-section=\"").concat(groups.section, "\" data-subsection=\"").concat(subsection, "\">ORS ").concat(groups.chapter, ".").concat(groups.section).concat(subsection, "</a>");
+    return link;
+  };
 
-  var results = _toConsumableArray(foo);
+  function replaceAll(text) {
+    // let regexp = /ORS\s+(\d{3})/g;
+    var _iterator = _createForOfIteratorHelper(patterns),
+        _step;
 
-  console.log(results);
-}
+    try {
+      for (_iterator.s(); !(_step = _iterator.n()).done;) {
+        var regexp = _step.value;
+        text = text.replaceAll(regexp, replacer); // console.log(text);
+      }
+    } catch (err) {
+      _iterator.e(err);
+    } finally {
+      _iterator.f();
+    }
 
-function highlight(chapter, section) {
-  var endSection = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
-  var doc = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : null;
-  console.log(chapter);
-  console.log(section);
-  var range = doc ? doc.createRange() : new Range();
-  doc = doc || document;
-  endSection = endSection || section + 1;
-  section = padZeros(section);
-  endSection = padZeros(endSection);
-  console.log(section, endSection);
-  var start = chapter + '.' + section;
-  var end = chapter + '.' + endSection;
-  console.log(start, end);
-  var firstNode = doc.getElementById(start);
-  var secondNode = doc.getElementById(end);
-  range.setStartBefore(firstNode);
-  range.setEndBefore(secondNode);
-  console.log(range);
-  var newParent = doc.createElement('div');
-  newParent.setAttribute('style', 'background-color:yellow;');
-  range.surroundContents(newParent);
-}
-
-function padZeros(section) {
-  if (section < 10) {
-    return "00" + section;
+    return text;
   }
 
-  if (section < 100) {
-    return "0" + section;
+  function parseOrs(text) {
+    var linked = replaceAll(text); // "123.123&nbsp;&nbsp;&nbsp;&nbsp;"
+
+    var foo = linked.replaceAll( /*#__PURE__*/_wrapRegExp(/(\d{3})\.(\d{3})(\s{4,})/g, {
+      chapter: 1,
+      section: 2,
+      spaces: 3
+    }), function (match, p1, p2, p3, offset, string, groups) {
+      return "<a href=\"#".concat(groups.chapter, ".").concat(groups.section, "\" data-action=\"ors-nav\" data-chapter=\"").concat(groups.chapter, "\" data-section=\"").concat(groups.section, "\">").concat(groups.chapter, ".").concat(groups.section, "</a>").concat(groups.spaces);
+    });
+    return foo;
   }
 
-  return "" + section;
-}
-/*
-DOES NOT WORK
-Range {commonAncestorContainer: div.wordsection1, startContainer: p.msonormal, startOffset: 0, endContainer: p.msonormal, endOffset: 0, …}
-collapsed: false
-commonAncestorContainer: div.wordsection1
-endContainer: p.msonormal
-endOffset: 0
-startContainer: p.msonormal
-startOffset: 0
-[[Prototype]]: Range
-*/
+  function matchAll() {
+    var regexp = /*#__PURE__*/_wrapRegExp(/ORS\s+(\d{3})\.(\d{3})/g, {
+      chapter: 1,
+      section: 2
+    }); // let foo = "ORS 123.123".matchAll(regexp);
 
-/*
-WORKS
-Range {commonAncestorContainer: div.WordSection1, startContainer: div.WordSection1, startOffset: 384, endContainer: div.WordSection1, endOffset: 436, …}
-collapsed: false
-commonAncestorContainer: div.WordSection1
-endContainer: div.WordSection1
-endOffset: 385
-startContainer: div.WordSection1
-startOffset: 384
-[[Prototype]]: Range
-*/
+
+    var foo = "1987 c.833 §3; 1989 c.453 §2; 1993 c.186 §4; 1995 c.102 §1; 1999 c.448 §1; 1999 c.599 §1; 2021 c.539 §109".matchAll(/\d{4}\s+c\.\d{3}\s+§\d+/g);
+
+    var results = _toConsumableArray(foo);
+
+    console.log(results);
+  }
+
+  function highlight(chapter, section) {
+    var endSection = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+    var doc = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : null;
+    console.log(chapter);
+    console.log(section);
+    var range = doc ? doc.createRange() : new Range();
+    doc = doc || document;
+    endSection = endSection || section + 1;
+    section = padZeros(section);
+    endSection = padZeros(endSection);
+    console.log(section, endSection);
+    var start = chapter + '.' + section;
+    var end = chapter + '.' + endSection;
+    console.log(start, end);
+    var firstNode = doc.getElementById(start);
+    var secondNode = doc.getElementById(end);
+    range.setStartBefore(firstNode);
+    range.setEndBefore(secondNode);
+    console.log(range);
+    var newParent = doc.createElement('div');
+    newParent.setAttribute('style', 'background-color:yellow;');
+    range.surroundContents(newParent);
+  }
+
+  function padZeros(section) {
+    if (section < 10) {
+      return "00" + section;
+    }
+
+    if (section < 100) {
+      return "0" + section;
+    }
+
+    return "" + section;
+  }
+
+  function OrsParser() {}
+
+  OrsParser.prototype = proto;
+  OrsParser.highlight = highlight;
+  OrsParser.replaceAll = replaceAll;
+  return OrsParser;
+  /*
+  DOES NOT WORK
+  Range {commonAncestorContainer: div.wordsection1, startContainer: p.msonormal, startOffset: 0, endContainer: p.msonormal, endOffset: 0, …}
+  collapsed: false
+  commonAncestorContainer: div.wordsection1
+  endContainer: p.msonormal
+  endOffset: 0
+  startContainer: p.msonormal
+  startOffset: 0
+  [[Prototype]]: Range
+  */
+
+  /*
+  WORKS
+  Range {commonAncestorContainer: div.WordSection1, startContainer: div.WordSection1, startOffset: 384, endContainer: div.WordSection1, endOffset: 436, …}
+  collapsed: false
+  commonAncestorContainer: div.WordSection1
+  endContainer: div.WordSection1
+  endOffset: 385
+  startContainer: div.WordSection1
+  startOffset: 384
+  [[Prototype]]: Range
+  */
+}();

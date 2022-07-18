@@ -4,7 +4,9 @@ export {OrsParser};
 
 const OrsParser = (function() {
 
+    let proto = {};
 
+    
     const patterns = [
         /ORS\s+(?<chapter>\d+)\.(?<section>\d+)(?:\s?\((?<subsection>[0-9a-zA-Z]{1,3})\))*/g,
         // /ORS\s+(?<chapter>\d+)\.(?<section>\d+)/g,
@@ -114,6 +116,8 @@ const OrsParser = (function() {
     }
 
     OrsParser.prototype = proto;
+    OrsParser.highlight = highlight;
+    OrsParser.replaceAll = replaceAll;
 
     return OrsParser;
 /*

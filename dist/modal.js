@@ -4,35 +4,44 @@ modal.renderHtml("<h1>Hello World!</h1>");
 modal.show();
 
 */
-var modal = {
-  show: function show() {
-    $('body').addClass("has-modal");
-    $("body").addClass("loading");
-    setTimeout(function () {
-      return $("#modal").addClass("fullscreen");
-    }, 100);
-  },
-  hide: function hide() {
-    $("#modal").removeClass("fullscreen");
-    setTimeout(function () {
-      return $('body').removeClass('has-modal');
-    }, 100);
-  },
-  render: function render(vNode) {
-    document.getElementById('modal-content').innerHTML = "";
-    document.getElementById('modal-content').appendChild(createElement(vNode));
-  },
-  renderHtml: function renderHtml(html, targetId) {
-    $("body").removeClass("loading");
-    document.getElementById(targetId || "modal-content").innerHTML = html;
-  },
-  titleBar: function titleBar(html) {
-    document.getElementById("modal-title-bar").innerHTML = html;
-  },
-  toc: function toc(html) {
-    document.getElementById("ors-toc").innerHTML = html;
-  },
-  html: function html(_html) {
-    this.renderHtml(_html);
-  }
-};
+export { OrsModal };
+
+var OrsModal = function () {
+  var proto = {
+    show: function show() {
+      $('body').addClass("has-modal");
+      $("body").addClass("loading");
+      setTimeout(function () {
+        return $("#modal").addClass("fullscreen");
+      }, 100);
+    },
+    hide: function hide() {
+      $("#modal").removeClass("fullscreen");
+      setTimeout(function () {
+        return $('body').removeClass('has-modal');
+      }, 100);
+    },
+    render: function render(vNode) {
+      document.getElementById('modal-content').innerHTML = "";
+      document.getElementById('modal-content').appendChild(createElement(vNode));
+    },
+    renderHtml: function renderHtml(html, targetId) {
+      $("body").removeClass("loading");
+      document.getElementById(targetId || "modal-content").innerHTML = html;
+    },
+    titleBar: function titleBar(html) {
+      document.getElementById("modal-title-bar").innerHTML = html;
+    },
+    toc: function toc(html) {
+      document.getElementById("ors-toc").innerHTML = html;
+    },
+    html: function html(_html) {
+      this.renderHtml(_html);
+    }
+  };
+
+  function OrsModal() {}
+
+  OrsModal.prototype = proto;
+  return OrsModal;
+}();
