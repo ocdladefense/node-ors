@@ -1,22 +1,52 @@
-const patterns = [/ORS\s+(?<chapter>\d+)\.(?<section>\d+)(?:\s?\((?<subsection>[0-9a-zA-Z]{1,3})\))*/g, // /ORS\s+(?<chapter>\d+)\.(?<section>\d+)/g,
+function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
+
+function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread(); }
+
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+
+function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+
+function _iterableToArray(iter) { if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter); }
+
+function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) return _arrayLikeToArray(arr); }
+
+function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+
+function _wrapRegExp() { _wrapRegExp = function _wrapRegExp(re, groups) { return new BabelRegExp(re, void 0, groups); }; var _super = RegExp.prototype, _groups = new WeakMap(); function BabelRegExp(re, flags, groups) { var _this = new RegExp(re, flags); return _groups.set(_this, groups || _groups.get(re)), _setPrototypeOf(_this, BabelRegExp.prototype); } function buildGroups(result, re) { var g = _groups.get(re); return Object.keys(g).reduce(function (groups, name) { return groups[name] = result[g[name]], groups; }, Object.create(null)); } return _inherits(BabelRegExp, RegExp), BabelRegExp.prototype.exec = function (str) { var result = _super.exec.call(this, str); return result && (result.groups = buildGroups(result, this)), result; }, BabelRegExp.prototype[Symbol.replace] = function (str, substitution) { if ("string" == typeof substitution) { var groups = _groups.get(this); return _super[Symbol.replace].call(this, str, substitution.replace(/\$<([^>]+)>/g, function (_, name) { return "$" + groups[name]; })); } if ("function" == typeof substitution) { var _this = this; return _super[Symbol.replace].call(this, str, function () { var args = arguments; return "object" != _typeof(args[args.length - 1]) && (args = [].slice.call(args)).push(buildGroups(args, _this)), substitution.apply(this, args); }); } return _super[Symbol.replace].call(this, str, substitution); }, _wrapRegExp.apply(this, arguments); }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); Object.defineProperty(subClass, "prototype", { writable: false }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf ? Object.setPrototypeOf.bind() : function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+var patterns = [/*#__PURE__*/_wrapRegExp(/ORS\s+(\d+)\.(\d+)(?:\s?\(([0-9a-zA-Z]{1,3})\))*/g, {
+  chapter: 1,
+  section: 2,
+  subsection: 3
+}),
+/*#__PURE__*/
+// /ORS\s+(?<chapter>\d+)\.(?<section>\d+)/g,
 // /(?<!ORS\s+\d+)((?<chapter>\d+)\.(?<section>\d+))/g
-/(?:\d{4}\s)*c\.(?<chapter>\d+)\s+§+(?<section>\d+,*\s?)+/g];
-const replacers = [];
+_wrapRegExp(/(?:\d{4}\s)*c\.(\d+)\s+\xA7+(\d+,*\s?)+/g, {
+  chapter: 1,
+  section: 2
+})];
+var replacers = [];
 
-let replacer = function (match, p1, p2, offset, string, g) {
+var replacer = function replacer(match, p1, p2, offset, string, g) {
   // console.log(arguments);
-  let length = arguments.length - 3;
-  let memorized = Array.prototype.slice.call(arguments, length);
-  let groups = memorized.pop(); // console.log(groups);
+  var length = arguments.length - 3;
+  var memorized = Array.prototype.slice.call(arguments, length);
+  var groups = memorized.pop(); // console.log(groups);
 
-  let subsection = groups.subsection ? `(${groups.subsection})` : "";
-  let link = `<a href="#" data-action="show-ors" data-chapter="${groups.chapter}" data-section="${groups.section}" data-subsection="${subsection}">ORS ${groups.chapter}.${groups.section}${subsection}</a>`;
+  var subsection = groups.subsection ? "(".concat(groups.subsection, ")") : "";
+  var link = "<a href=\"#\" data-action=\"show-ors\" data-chapter=\"".concat(groups.chapter, "\" data-section=\"").concat(groups.section, "\" data-subsection=\"").concat(subsection, "\">ORS ").concat(groups.chapter, ".").concat(groups.section).concat(subsection, "</a>");
   return link;
 };
 
 function replaceAll(text) {
   // let regexp = /ORS\s+(\d{3})/g;
-  for (var regexp of patterns) {
+  for (var _i = 0, _patterns = patterns; _i < _patterns.length; _i++) {
+    var regexp = _patterns[_i];
     text = text.replaceAll(regexp, replacer); // console.log(text);
   }
 
@@ -24,26 +54,38 @@ function replaceAll(text) {
 }
 
 function parseOrs(text) {
-  let linked = replaceAll(text); // "123.123&nbsp;&nbsp;&nbsp;&nbsp;"
+  var linked = replaceAll(text); // "123.123&nbsp;&nbsp;&nbsp;&nbsp;"
 
-  let foo = linked.replaceAll(/(?<chapter>\d{3})\.(?<section>\d{3})(?<spaces>\s{4,})/g, function (match, p1, p2, p3, offset, string, groups) {
-    return `<a href="#${groups.chapter}.${groups.section}" data-action="ors-nav" data-chapter="${groups.chapter}" data-section="${groups.section}">${groups.chapter}.${groups.section}</a>${groups.spaces}`;
+  var foo = linked.replaceAll( /*#__PURE__*/_wrapRegExp(/(\d{3})\.(\d{3})(\s{4,})/g, {
+    chapter: 1,
+    section: 2,
+    spaces: 3
+  }), function (match, p1, p2, p3, offset, string, groups) {
+    return "<a href=\"#".concat(groups.chapter, ".").concat(groups.section, "\" data-action=\"ors-nav\" data-chapter=\"").concat(groups.chapter, "\" data-section=\"").concat(groups.section, "\">").concat(groups.chapter, ".").concat(groups.section, "</a>").concat(groups.spaces);
   });
   return foo;
 }
 
 function matchAll() {
-  let regexp = /ORS\s+(?<chapter>\d{3})\.(?<section>\d{3})/g; // let foo = "ORS 123.123".matchAll(regexp);
+  var regexp = /*#__PURE__*/_wrapRegExp(/ORS\s+(\d{3})\.(\d{3})/g, {
+    chapter: 1,
+    section: 2
+  }); // let foo = "ORS 123.123".matchAll(regexp);
 
-  let foo = "1987 c.833 §3; 1989 c.453 §2; 1993 c.186 §4; 1995 c.102 §1; 1999 c.448 §1; 1999 c.599 §1; 2021 c.539 §109".matchAll(/\d{4}\s+c\.\d{3}\s+§\d+/g);
-  let results = [...foo];
+
+  var foo = "1987 c.833 §3; 1989 c.453 §2; 1993 c.186 §4; 1995 c.102 §1; 1999 c.448 §1; 1999 c.599 §1; 2021 c.539 §109".matchAll(/\d{4}\s+c\.\d{3}\s+§\d+/g);
+
+  var results = _toConsumableArray(foo);
+
   console.log(results);
 }
 
-function highlight(chapter, section, endSection = null, doc = null) {
+function highlight(chapter, section) {
+  var endSection = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+  var doc = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : null;
   console.log(chapter);
   console.log(section);
-  let range = doc ? doc.createRange() : new Range();
+  var range = doc ? doc.createRange() : new Range();
   doc = doc || document;
   endSection = endSection || section + 1;
   section = padZeros(section);
