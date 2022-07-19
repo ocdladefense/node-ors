@@ -118,6 +118,7 @@ const OrsParser = (function() {
     OrsParser.prototype = proto;
     OrsParser.highlight = highlight;
     OrsParser.replaceAll = replaceAll;
+    OrsParser.padZeros = padZeros;
 
     return OrsParser;
 /*
