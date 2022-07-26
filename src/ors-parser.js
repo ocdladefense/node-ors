@@ -67,25 +67,27 @@ const OrsParser = (function() {
 
 
 
-    function highlight(chapter, section, endSection = null, doc = null){
+    function highlight(chapter, section, endSection, doc = null){
         console.log(chapter);
         console.log(section);
+        console.log(endSection);
         let range = doc ? doc.createRange() : new Range();
         doc = doc || document;
         
-        endSection = endSection || (section + 1);
+        //endSection = endSection || (section + 1);
         
-        section = padZeros(section);
-        endSection = padZeros(endSection);
-        console.log(section,endSection);
+        //section = padZeros(section);
+        //endSection = padZeros(endSection);
+        //console.log(section,endSection);
+        
+        //var start = chapter + '.' + section;   
+        //var end = chapter + '.' + endSection;
 
-        var start = chapter + '.' + section;
-        var end = chapter + '.' + endSection;
+        //console.log(start,end);
 
-        console.log(start,end);
-
-        var firstNode = doc.getElementById(start); 
-        var secondNode = doc.getElementById(end); 
+        var firstNode = doc.getElementById(section); 
+        console.log(firstNode);
+        var secondNode = doc.getElementById(endSection); 
         range.setStartBefore(firstNode);
         range.setEndBefore(secondNode);
 
