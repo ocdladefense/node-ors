@@ -95,22 +95,23 @@ var OrsParser = function () {
     console.log(results);
   }
 
-  function highlight(chapter, section) {
-    var endSection = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+  function highlight(chapter, section, endSection) {
     var doc = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : null;
     console.log(chapter);
     console.log(section);
+    console.log(endSection);
     var range = doc ? doc.createRange() : new Range();
-    doc = doc || document;
-    endSection = endSection || section + 1;
-    section = padZeros(section);
-    endSection = padZeros(endSection);
-    console.log(section, endSection);
-    var start = chapter + '.' + section;
-    var end = chapter + '.' + endSection;
-    console.log(start, end);
-    var firstNode = doc.getElementById(start);
-    var secondNode = doc.getElementById(end);
+    doc = doc || document; //endSection = endSection || (section + 1);
+    //section = padZeros(section);
+    //endSection = padZeros(endSection);
+    //console.log(section,endSection);
+    //var start = chapter + '.' + section;   
+    //var end = chapter + '.' + endSection;
+    //console.log(start,end);
+
+    var firstNode = doc.getElementById(section);
+    console.log(firstNode);
+    var secondNode = doc.getElementById(endSection);
     range.setStartBefore(firstNode);
     range.setEndBefore(secondNode);
     console.log(range);

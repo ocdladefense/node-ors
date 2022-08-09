@@ -22,17 +22,14 @@ class OrsChapter{
     sectionTitles= {};
     sectionHeadings ={};
 
-    OrsChapter(chapter){
+    constructor(chapter){
         this.chapter = chapter;
-    };
+    }
 
-    //import ors parser functions here to find and replace links
-
-
-
+   
 
     load() {
-        return fetch("index.php?chapter=" + this.chapter +"&section=" +this.section)
+        return fetch("index.php?chapter=" + this.chapter)
             .then(function (resp) {
                 return resp.arrayBuffer();
             })
@@ -40,7 +37,7 @@ class OrsChapter{
                 const decoder = new TextDecoder("iso-8859-1");
                 return decoder.decode(buffer);
             })
-            .then(function (html){
+            .then( (html) => {
                 //initialize the parser
                 const parser = new DOMParser();
                 html = OrsParser.replaceAll(html);
@@ -82,34 +79,7 @@ class OrsChapter{
                     this.sectionHeadings[parseInt(section)] = boldParent;
                 }
     
-                // Inserts anchors as div tags in the doc.
-                /*
-                for(var prop in sectionTitles){
-                    var headingDiv = doc.createElement('div');
-                    headingDiv.setAttribute('id', prop);
-                    headingDiv.setAttribute('class', 'ocdla-heading');
-                    headingDiv.setAttribute('data-chapter', chapter);
-                    headingDiv.setAttribute('data-section', prop);
-    
-                    let target = sectionHeadings[prop];
-                    target.parentNode.insertBefore(headingDiv, target);
-                }
-                */
-                // console.log(sectionTitles);
-                // console.log(sectionHeadings);
                
-                // chapter = parseInt(chapter);
-                // section = parseInt(section);
-                // highlight(chapter, section, null, doc);
-                // Why does the range not work if called here?
-    
-                
-    
-                /*
-                const serializer = new XMLSerializer();
-                const subset = this.doc.querySelector(".WordSection1");
-                return [this.sectionTitles, this.sectionHeadings, serializer.serializeToString(subset)];
-                */
             });
 
             
@@ -135,11 +105,10 @@ class OrsChapter{
         }
     }
 
-    createToC(chapter, section) {
-        modal.show();
-        // Network call.
-        let network = fetchOrs(chapter,section);
-        let chapter = new OrsChapter(chapter);
+    
+    testToC(){
+        var network = load(this.chapter);
+        
         return network.then(function(data) {
             let sections,elements,html;
             [sections,elements,html] = data;
@@ -171,28 +140,52 @@ class OrsChapter{
             for(let s in sections) {
                 toc.push(`<li><a href="#${s}">${s} - ${sections[s]}</a></li>`);
             }
-                /*
-                    doc.findAndReplace() <-- links
-                    doc.parse(html)
-                    doc.getAll(sections)
-                    doc.createTOC()
-                    doc.injectAnchors()
-                    doc.toString()
-                    doc.getSection(sectionNum)
-                    doc.highlight(sectionNum)
-                */
-            
-            // highlight(chapter, section, null, doc);
-            // Why does the range not work if called here?
+                         
+        });
+       
+    }
+
+    createToC() {
+        modal.show();
+        // Network call.
+        let network = load(this.chapter,this.section);
+        let chapter = new OrsChapter(this.chapter);
+        return network.then(function(data) {
+            let sections,elements,html;
+            [sections,elements,html] = data;
+            let volumes = ["Courts, Or. Rules of Civil Procedure",
+            "Business Organizations, Commercial Code",
+            "Landlord-Tenant, Domestic Relations, Probate",
+            "Criminal Procedure, Crimes",
+            "State Government, Government Procedures, Land Use",
+            "Local Government, Pub. Employees, Elections",
+            "Pub. Facilities & Finance",
+            "Revenue & Taxation",
+            "Education & Culture",
+            "Highways, Military",
+            "Juvenile Code, Human Services",
+            "Pub. Health",
+            "Housing, Environment",
+            "Drugs & Alcohol, Fire Protection, Natural Resources",
+            "Water Resources, Agriculture & Food",
+            "Trade Practices, Labor & Employment",
+            "Occupations",
+            "Financial Institutions, Insurance",
+            "Utilities, Vehicle Code, Watercraft, Aviation, Constitutions"];
     
-            
-            modal.renderHtml(html,"ors-statutes");
-            modal.renderHtml(doc.toString(),"ors-statutes");
-            modal.toc(toc.join("\n"));
-            modal.titleBar("Oregon Revised Statutes - <select>"+optionsHtml+"</select><input type='checkbox' id='theHighlighter' name='highlighting' /><label for='theHighligher'>Highlight</label>");
-            window.location.hash = section;
+            let options = volumes.map(function(v,index){ return `<option value="${index+1}">Volume ${index+1} - ${v}</option>`});
+            let optionsHtml = options.join("\n");
     
-            var nextSection = getNextSection(section);
+            let toc = [];
+    
+            for(let s in sections) {
+                toc.push(`<li><a href="#${s}">${s} - ${sections[s]}</a></li>`);
+            }
+               
+          
+    
+            window.location.hash = this.section;   
+            var nextSection = getNextSection(this.section);
             console.log(nextSection);
             //good luck :^) goal: do highlighting at level of object
             //OrsParser.highlight(chapter,section,nextSection.dataset.section);
@@ -220,6 +213,13 @@ class OrsChapter{
         range.surroundContents(newParent);
     }
 
+
+    getSection(section){
+        //do we want to do sections inside this class? or do them in their own class?
+    }
+
+
+
     getNextSection(sectionNum){
         var headings = this.doc.querySelectorAll('.ocdla-heading');      
         var section = this.doc.getElementById(sectionNum);
@@ -232,4 +232,9 @@ class OrsChapter{
         }
     
     }
+
+
+
+
+
 }
