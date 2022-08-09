@@ -28,7 +28,7 @@ class OrsChapter{
 
    
 
-    load() {
+    async load() {
         return fetch("index.php?chapter=" + this.chapter)
             .then(function (resp) {
                 return resp.arrayBuffer();
@@ -97,7 +97,7 @@ class OrsChapter{
             var headingDiv = this.doc.createElement('div');
             headingDiv.setAttribute('id', prop);
             headingDiv.setAttribute('class', 'ocdla-heading');
-            headingDiv.setAttribute('data-chapter', chapter);
+            headingDiv.setAttribute('data-chapter', this.chapter);
             headingDiv.setAttribute('data-section', prop);
 
             let target = this.sectionHeadings[prop];
@@ -107,7 +107,7 @@ class OrsChapter{
 
     
     testToC(){
-        var network = load(this.chapter);
+        let network = load(this.chapter);
         
         return network.then(function(data) {
             let sections,elements,html;
@@ -194,7 +194,7 @@ class OrsChapter{
 
 
     highlight(section, endSection){
-        console.log(chapter);
+        console.log(this.chapter);
         console.log(section);
         console.log(endSection);
         let range = this.doc.createRange();
@@ -203,14 +203,41 @@ class OrsChapter{
         var firstNode = this.doc.getElementById(section); 
         console.log(firstNode);
         var secondNode = this.doc.getElementById(endSection); 
+        console.log(secondNode);
         range.setStartBefore(firstNode);
-        range.setEndBefore(secondNode);
+        range.setEnd(secondNode.parentNode, secondNode.parentNode.childNodes.length);
+
+        //let nextParagraph = firstNode.parentNode.nextSibling.nextSibling;
+        //range.setEnd(nextParagraph, nextParagraph.childNodes.length);
 
         console.log(range);
 
         var newParent = this.doc.createElement('div');
         newParent.setAttribute('style', 'background-color:yellow;');
-        range.surroundContents(newParent);
+        //range.surroundContents(newParent);
+        var contents = range.extractContents();
+        console.log(contents);
+    }
+
+    extractContents(sectionNumber){
+        let range = this.doc.createRange();
+        
+        
+        var firstNode = this.doc.getElementById(section); 
+        console.log(firstNode);
+        var secondNode = this.doc.getElementById(endSection); 
+        console.log(secondNode);
+        range.setStartBefore(firstNode);
+        range.setEnd(secondNode.parentNode, secondNode.parentNode.childNodes.length);
+
+        console.log(range);
+
+        var newParent = this.doc.createElement('div');
+        newParent.setAttribute('style', 'background-color:yellow;');
+        var contents = range.extractContents();
+        console.log(contents);
+
+        return contents;
     }
 
 
