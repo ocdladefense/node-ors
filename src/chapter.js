@@ -223,17 +223,16 @@ class OrsChapter{
         let range = this.doc.createRange();
         
         
-        var firstNode = this.doc.getElementById(section); 
+        var firstNode = this.doc.getElementById(sectionNumber); 
         console.log(firstNode);
         var secondNode = this.doc.getElementById(endSection); 
         console.log(secondNode);
         range.setStartBefore(firstNode);
-        range.setEnd(secondNode.parentNode, secondNode.parentNode.childNodes.length);
+        range.setEndBefore(secondNode);
 
         console.log(range);
 
-        var newParent = this.doc.createElement('div');
-        newParent.setAttribute('style', 'background-color:yellow;');
+        
         var contents = range.extractContents();
         console.log(contents);
 
