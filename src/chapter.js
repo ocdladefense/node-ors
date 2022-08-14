@@ -106,11 +106,10 @@ class OrsChapter{
     }
 
     
-    testToC(){
-        let network = load(this.chapter);
-        
-        return network.then(function(data) {
-            let sections,elements,html;
+    testToC(section){
+      
+      return (function(){
+        let sections,elements,html;
             [sections,elements,html] = data;
             let volumes = ["Courts, Or. Rules of Civil Procedure",
             "Business Organizations, Commercial Code",
@@ -140,9 +139,13 @@ class OrsChapter{
             for(let s in sections) {
                 toc.push(`<li><a href="#${s}">${s} - ${sections[s]}</a></li>`);
             }
-                         
-        });
-       
+               
+          
+    
+            window.location.hash = this.section;   
+            var nextSection = getNextSection(this.section);
+            console.log(nextSection);
+      }) 
     }
 
     createToC() {
