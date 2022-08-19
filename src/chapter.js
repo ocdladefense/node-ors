@@ -109,31 +109,21 @@ class OrsChapter{
 
     
     buildToC(){
-        //modal.show();
-        this.sectionTitles["blah"] = "yada";
-        this.sectionTitles["9999"] = "test test test";
+        
         console.log(this.sectionTitles);
         let toc = [];
-      
-
-        
-
-
-        
+             
         for(let key in this.sectionTitles) {
             let val = this.sectionTitles[key];
             
-            //toc.push(`<li><a href="#${s}">${s} - ${this.sectionTitles[s]}</a></li>`);
+            
 
              toc.push(`<li><a href="#${key}">${key} - ${val}</a></li>`);
         } 
         console.log(toc);
         var joinedToc = toc.join(' ');
-        
 
         return joinedToc;
-
-        //window.location.hash = this.section;
     }
 
     createToC() {
