@@ -106,46 +106,17 @@ class OrsChapter{
     }
 
     
-    testToC(section){
-      
-      return (function(){
-        let sections,elements,html;
-            [sections,elements,html] = data;
-            let volumes = ["Courts, Or. Rules of Civil Procedure",
-            "Business Organizations, Commercial Code",
-            "Landlord-Tenant, Domestic Relations, Probate",
-            "Criminal Procedure, Crimes",
-            "State Government, Government Procedures, Land Use",
-            "Local Government, Pub. Employees, Elections",
-            "Pub. Facilities & Finance",
-            "Revenue & Taxation",
-            "Education & Culture",
-            "Highways, Military",
-            "Juvenile Code, Human Services",
-            "Pub. Health",
-            "Housing, Environment",
-            "Drugs & Alcohol, Fire Protection, Natural Resources",
-            "Water Resources, Agriculture & Food",
-            "Trade Practices, Labor & Employment",
-            "Occupations",
-            "Financial Institutions, Insurance",
-            "Utilities, Vehicle Code, Watercraft, Aviation, Constitutions"];
-    
-            let options = volumes.map(function(v,index){ return `<option value="${index+1}">Volume ${index+1} - ${v}</option>`});
-            let optionsHtml = options.join("\n");
-    
-            let toc = [];
-    
-            for(let s in sections) {
-                toc.push(`<li><a href="#${s}">${s} - ${sections[s]}</a></li>`);
-            }
-               
-          
-    
-            window.location.hash = this.section;   
-            var nextSection = getNextSection(this.section);
-            console.log(nextSection);
-      }) 
+    testToC(){
+        modal.show();
+        console.log(this.sectionTitles);
+        let toc = [];
+
+        for(let s in this.sectionTitles) {
+             toc.push(`<li><a href="#${s}">${s} - ${this.sectionTitles[s]}</a></li>`);
+        } 
+        console.log(toc);
+
+        window.location.hash = this.section;
     }
 
     createToC() {
