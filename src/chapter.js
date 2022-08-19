@@ -59,7 +59,7 @@ class OrsChapter{
                     if(trimmed.indexOf("Note") === 0) continue;
                     let strings = trimmed.split("\n");
                     let chapter, section, key, val;
-                    console.log(strings);
+                    //console.log(strings);
                     // if array has oonly one element,
                     // then we know this doesn't follow the traditional statute pattern.
                     if(strings.length === 1) {
@@ -74,7 +74,9 @@ class OrsChapter{
                         chapter = numbers[0];
                         section = numbers[1];
                     }
-                    console.log(key);
+                    //console.log(key);
+
+                    //might need to change this one to remove parseInt
                     this.sectionTitles[parseInt(section)] = val;
                     this.sectionHeadings[parseInt(section)] = boldParent;
                 }
@@ -106,17 +108,32 @@ class OrsChapter{
     }
 
     
-    testToC(){
-        modal.show();
+    buildToC(){
+        //modal.show();
+        this.sectionTitles["blah"] = "yada";
+        this.sectionTitles["9999"] = "test test test";
         console.log(this.sectionTitles);
         let toc = [];
+      
 
-        for(let s in this.sectionTitles) {
-             toc.push(`<li><a href="#${s}">${s} - ${this.sectionTitles[s]}</a></li>`);
+        
+
+
+        
+        for(let key in this.sectionTitles) {
+            let val = this.sectionTitles[key];
+            
+            //toc.push(`<li><a href="#${s}">${s} - ${this.sectionTitles[s]}</a></li>`);
+
+             toc.push(`<li><a href="#${key}">${key} - ${val}</a></li>`);
         } 
         console.log(toc);
+        var joinedToc = toc.join(' ');
+        
 
-        window.location.hash = this.section;
+        return joinedToc;
+
+        //window.location.hash = this.section;
     }
 
     createToC() {
