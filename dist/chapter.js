@@ -150,21 +150,26 @@ var OrsChapter = /*#__PURE__*/function () {
   }, {
     key: "buildToC",
     value: function buildToC() {
-      //modal.show();
-      this.sectionTitles["blah"] = "yada";
-      this.sectionTitles["9999"] = "test test test";
       console.log(this.sectionTitles);
       var toc = [];
 
       for (var key in this.sectionTitles) {
-        var val = this.sectionTitles[key]; //toc.push(`<li><a href="#${s}">${s} - ${this.sectionTitles[s]}</a></li>`);
-
+        var val = this.sectionTitles[key];
         toc.push("<li><a href=\"#".concat(key, "\">").concat(key, " - ").concat(val, "</a></li>"));
       }
 
       console.log(toc);
       var joinedToc = toc.join(' ');
-      return joinedToc; //window.location.hash = this.section;
+      return joinedToc;
+    }
+  }, {
+    key: "buildVolumes",
+    value: function buildVolumes() {
+      var volumes = ["Courts, Or. Rules of Civil Procedure", "Business Organizations, Commercial Code", "Landlord-Tenant, Domestic Relations, Probate", "Criminal Procedure, Crimes", "State Government, Government Procedures, Land Use", "Local Government, Pub. Employees, Elections", "Pub. Facilities & Finance", "Revenue & Taxation", "Education & Culture", "Highways, Military", "Juvenile Code, Human Services", "Pub. Health", "Housing, Environment", "Drugs & Alcohol, Fire Protection, Natural Resources", "Water Resources, Agriculture & Food", "Trade Practices, Labor & Employment", "Occupations", "Financial Institutions, Insurance", "Utilities, Vehicle Code, Watercraft, Aviation, Constitutions"];
+      var options = volumes.map(function (v, index) {
+        return "<option value=\"".concat(index + 1, "\">Volume ").concat(index + 1, " - ").concat(v, "</option>");
+      });
+      var optionsHtml = options.join("\n");
     }
   }, {
     key: "createToC",

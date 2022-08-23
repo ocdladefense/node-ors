@@ -126,6 +126,31 @@ class OrsChapter{
         return joinedToc;
     }
 
+    buildVolumes(){
+        let volumes = ["Courts, Or. Rules of Civil Procedure",
+            "Business Organizations, Commercial Code",
+            "Landlord-Tenant, Domestic Relations, Probate",
+            "Criminal Procedure, Crimes",
+            "State Government, Government Procedures, Land Use",
+            "Local Government, Pub. Employees, Elections",
+            "Pub. Facilities & Finance",
+            "Revenue & Taxation",
+            "Education & Culture",
+            "Highways, Military",
+            "Juvenile Code, Human Services",
+            "Pub. Health",
+            "Housing, Environment",
+            "Drugs & Alcohol, Fire Protection, Natural Resources",
+            "Water Resources, Agriculture & Food",
+            "Trade Practices, Labor & Employment",
+            "Occupations",
+            "Financial Institutions, Insurance",
+            "Utilities, Vehicle Code, Watercraft, Aviation, Constitutions"];
+
+        let options = volumes.map(function(v,index){ return `<option value="${index+1}">Volume ${index+1} - ${v}</option>`});
+        let optionsHtml = options.join("\n");
+    }
+
     createToC() {
         modal.show();
         // Network call.
