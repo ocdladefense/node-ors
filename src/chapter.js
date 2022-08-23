@@ -149,6 +149,8 @@ class OrsChapter{
 
         let options = volumes.map(function(v,index){ return `<option value="${index+1}">Volume ${index+1} - ${v}</option>`});
         let optionsHtml = options.join("\n");
+
+        return optionsHtml;
     }
 
     createToC() {

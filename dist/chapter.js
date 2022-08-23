@@ -170,6 +170,7 @@ var OrsChapter = /*#__PURE__*/function () {
         return "<option value=\"".concat(index + 1, "\">Volume ").concat(index + 1, " - ").concat(v, "</option>");
       });
       var optionsHtml = options.join("\n");
+      return optionsHtml;
     }
   }, {
     key: "createToC",
