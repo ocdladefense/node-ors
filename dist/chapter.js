@@ -227,8 +227,8 @@ var OrsChapter = /*#__PURE__*/function () {
       console.log(contents);
     }
   }, {
-    key: "extractContents",
-    value: function extractContents(sectionNumber) {
+    key: "clone",
+    value: function clone(sectionNumber, endSection) {
       var range = this.doc.createRange();
       var firstNode = this.doc.getElementById(sectionNumber);
       console.log(firstNode);
@@ -237,7 +237,7 @@ var OrsChapter = /*#__PURE__*/function () {
       range.setStartBefore(firstNode);
       range.setEndBefore(secondNode);
       console.log(range);
-      var contents = range.extractContents();
+      var contents = range.cloneContents();
       console.log(contents);
       return contents;
     }

@@ -227,7 +227,7 @@ class OrsChapter{
         console.log(contents);
     }
 
-    extractContents(sectionNumber){
+    clone(sectionNumber, endSection){
         let range = this.doc.createRange();
         
         
@@ -241,7 +241,7 @@ class OrsChapter{
         console.log(range);
 
         
-        var contents = range.extractContents();
+        var contents = range.cloneContents();
         console.log(contents);
 
         return contents;
