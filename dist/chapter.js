@@ -167,7 +167,7 @@ var OrsChapter = /*#__PURE__*/function () {
     value: function buildVolumes() {
       var volumes = ["Courts, Or. Rules of Civil Procedure", "Business Organizations, Commercial Code", "Landlord-Tenant, Domestic Relations, Probate", "Criminal Procedure, Crimes", "State Government, Government Procedures, Land Use", "Local Government, Pub. Employees, Elections", "Pub. Facilities & Finance", "Revenue & Taxation", "Education & Culture", "Highways, Military", "Juvenile Code, Human Services", "Pub. Health", "Housing, Environment", "Drugs & Alcohol, Fire Protection, Natural Resources", "Water Resources, Agriculture & Food", "Trade Practices, Labor & Employment", "Occupations", "Financial Institutions, Insurance", "Utilities, Vehicle Code, Watercraft, Aviation, Constitutions"];
       var options = volumes.map(function (v, index) {
-        return "<option value=\"".concat(index + 1, "\">Volume ").concat(index + 1, " - ").concat(v, "</option>");
+        return "<select><option value=\"".concat(index + 1, "\">Volume ").concat(index + 1, " - ").concat(v, "</option></select>");
       });
       var optionsHtml = options.join("\n");
       return optionsHtml;

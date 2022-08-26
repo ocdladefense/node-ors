@@ -21,6 +21,7 @@ class OrsChapter{
     document;
     sectionTitles= {};
     sectionHeadings ={};
+    volumeNames = {};
 
     constructor(chapter){
         this.chapter = chapter;
@@ -148,57 +149,20 @@ class OrsChapter{
             "Utilities, Vehicle Code, Watercraft, Aviation, Constitutions"];
 
         let options = volumes.map(function(v,index){ return `<option value="${index+1}">Volume ${index+1} - ${v}</option>`});
+        this.volumeNames = options;
         let optionsHtml = options.join("\n");
 
-        return optionsHtml;
+        return `<select>` + optionsHtml + `</select>`;
     }
 
-    createToC() {
-        modal.show();
-        // Network call.
-        let network = load(this.chapter,this.section);
-        let chapter = new OrsChapter(this.chapter);
-        return network.then(function(data) {
-            let sections,elements,html;
-            [sections,elements,html] = data;
-            let volumes = ["Courts, Or. Rules of Civil Procedure",
-            "Business Organizations, Commercial Code",
-            "Landlord-Tenant, Domestic Relations, Probate",
-            "Criminal Procedure, Crimes",
-            "State Government, Government Procedures, Land Use",
-            "Local Government, Pub. Employees, Elections",
-            "Pub. Facilities & Finance",
-            "Revenue & Taxation",
-            "Education & Culture",
-            "Highways, Military",
-            "Juvenile Code, Human Services",
-            "Pub. Health",
-            "Housing, Environment",
-            "Drugs & Alcohol, Fire Protection, Natural Resources",
-            "Water Resources, Agriculture & Food",
-            "Trade Practices, Labor & Employment",
-            "Occupations",
-            "Financial Institutions, Insurance",
-            "Utilities, Vehicle Code, Watercraft, Aviation, Constitutions"];
-    
-            let options = volumes.map(function(v,index){ return `<option value="${index+1}">Volume ${index+1} - ${v}</option>`});
-            let optionsHtml = options.join("\n");
-    
-            let toc = [];
-    
-            for(let s in sections) {
-                toc.push(`<li><a href="#${s}">${s} - ${sections[s]}</a></li>`);
-            }
-               
-          
-    
-            window.location.hash = this.section;   
-            var nextSection = getNextSection(this.section);
-            console.log(nextSection);
-            //good luck :^) goal: do highlighting at level of object
-            //OrsParser.highlight(chapter,section,nextSection.dataset.section);
-        });
+    linkVolumes(volumeNames){
+        let volumeLinks =[];
+        for(var i = 0; i < volumeNames.length; i++){
+            volumeLinks[i] = "<a href=#" + volumeNames[i] + "</a>"
+        };
+        return volumeLinks;
     }
+    
 
 
     highlight(section, endSection){
