@@ -31,6 +31,10 @@ var OrsModal = function () {
     },
     titleBar: function titleBar(html) {
       document.getElementById("modal-title-bar").innerHTML = html;
+      var selector = document.getElementById("dropdown");
+      selector.addEventListener("change", function () {
+        console.log("Dropdown Selected");
+      });
     },
     toc: function toc(html) {
       document.getElementById("ors-toc").innerHTML = html;

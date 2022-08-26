@@ -35,6 +35,9 @@ const OrsModal = (function() {
 
         titleBar: function(html) {
             document.getElementById("modal-title-bar").innerHTML = html;
+            var selector = document.getElementById("dropdown");
+
+            selector.addEventListener("change", ()=> {console.log("Dropdown Selected")});
         },
 
         toc: function(html) {
@@ -44,7 +47,10 @@ const OrsModal = (function() {
         
         html: function(html) {
             this.renderHtml(html);
-        }
+        },
+
+       
+        
     };
 
 

@@ -111,7 +111,7 @@ class OrsChapter{
     
     buildToC(){
         
-        console.log(this.sectionTitles);
+        //console.log(this.sectionTitles);
         let toc = [];
              
         for(let key in this.sectionTitles) {
@@ -121,7 +121,7 @@ class OrsChapter{
 
              toc.push(`<li><a href="#${key}">${key} - ${val}</a></li>`);
         } 
-        console.log(toc);
+        //console.log(toc);
         var joinedToc = toc.join(' ');
 
         return joinedToc;
@@ -152,7 +152,7 @@ class OrsChapter{
         this.volumeNames = options;
         let optionsHtml = options.join("\n");
 
-        return `<select>` + optionsHtml + `</select>`;
+        return `<select id='dropdown'>` + optionsHtml + `</select>`;
     }
 
     linkVolumes(volumeNames){
