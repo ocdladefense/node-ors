@@ -30,10 +30,14 @@ var OrsModal = function () {
       document.getElementById(targetId || "modal-content").innerHTML = html;
     },
     titleBar: function titleBar(html) {
-      document.getElementById("modal-title-bar").innerHTML = html;
+      document.getElementById("modal-title-bar-content").innerHTML = html;
       var selector = document.getElementById("dropdown");
       selector.addEventListener("change", function () {
         console.log("Dropdown Selected");
+      });
+      var closeBtn = document.getElementById("close-modal");
+      closeBtn.addEventListener("click", function () {
+        modal.hide();
       });
     },
     toc: function toc(html) {

@@ -34,10 +34,12 @@ const OrsModal = (function() {
         },
 
         titleBar: function(html) {
-            document.getElementById("modal-title-bar").innerHTML = html;
+            document.getElementById("modal-title-bar-content").innerHTML = html;
             var selector = document.getElementById("dropdown");
-
             selector.addEventListener("change", ()=> {console.log("Dropdown Selected")});
+
+            var closeBtn = document.getElementById("close-modal");
+            closeBtn.addEventListener("click", ()=>{modal.hide()});
         },
 
         toc: function(html) {
