@@ -22,14 +22,24 @@ class OrsChapter{
     sectionTitles= {};
     sectionHeadings ={};
     volumeNames = {};
+    static cache = {};
+    loaded;
+
 
     constructor(chapter){
         this.chapter = chapter;
+        this.constructor.cache[chapter] = this;
     }
 
-   
 
-    async load() {
+   static getCached(chapter){
+    return this.cache[chapter];
+   }
+
+    async load() {    
+        if(this.loaded){return Promise.resolve(true);}
+        
+        //this.cache["fubar"] = this;  
         return fetch("index.php?chapter=" + this.chapter)
             .then(function (resp) {
                 return resp.arrayBuffer();
@@ -82,11 +92,11 @@ class OrsChapter{
                     this.sectionHeadings[parseInt(section)] = boldParent;
                 }
     
-               
+               this.loaded = true;
+               this.injectAnchors();
             });
-
-            
-    }
+        }           
+    
 
     toString(){
         const serializer = new XMLSerializer();

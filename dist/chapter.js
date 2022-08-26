@@ -43,7 +43,10 @@ var OrsChapter = /*#__PURE__*/function () {
 
     _defineProperty(this, "volumeNames", {});
 
+    _defineProperty(this, "loaded", void 0);
+
     this.chapter = chapter;
+    this.constructor.cache[chapter] = this;
   }
 
   _createClass(OrsChapter, [{
@@ -56,6 +59,14 @@ var OrsChapter = /*#__PURE__*/function () {
           while (1) {
             switch (_context.prev = _context.next) {
               case 0:
+                if (!this.loaded) {
+                  _context.next = 2;
+                  break;
+                }
+
+                return _context.abrupt("return", Promise.resolve(true));
+
+              case 2:
                 return _context.abrupt("return", fetch("index.php?chapter=" + this.chapter).then(function (resp) {
                   return resp.arrayBuffer();
                 }).then(function (buffer) {
@@ -100,9 +111,13 @@ var OrsChapter = /*#__PURE__*/function () {
                     _this.sectionTitles[parseInt(section)] = val;
                     _this.sectionHeadings[parseInt(section)] = boldParent;
                   }
+
+                  _this.loaded = true;
+
+                  _this.injectAnchors();
                 }));
 
-              case 1:
+              case 3:
               case "end":
                 return _context.stop();
             }
@@ -229,7 +244,14 @@ var OrsChapter = /*#__PURE__*/function () {
         }
       }
     }
+  }], [{
+    key: "getCached",
+    value: function getCached(chapter) {
+      return this.cache[chapter];
+    }
   }]);
 
   return OrsChapter;
 }();
+
+_defineProperty(OrsChapter, "cache", {});
