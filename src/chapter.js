@@ -119,7 +119,7 @@ class OrsChapter{
     }
 
     
-    buildToC(){
+    buildToc(){
         
         //console.log(this.sectionTitles);
         let toc = [];
