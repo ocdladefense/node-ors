@@ -16,20 +16,9 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
 
 import { OrsParser } from "./ors-parser.js";
 export { OrsChapter };
-/*let doc = load chapter from legislature Site
-doc.findAndReplace() <-- links
-doc.parse(html)
-doc.getAll(sections)
-doc.createTOC()
-doc.injectAnchors()
-doc.toString()
-doc.getSection(sectionNum)
-doc.highlight(sectionNum)
-*/
-//import ors parser functions
 
 var OrsChapter = /*#__PURE__*/function () {
-  //class variables
+  //Class variables
   function OrsChapter(chapter) {
     _classCallCheck(this, OrsChapter);
 
@@ -45,13 +34,20 @@ var OrsChapter = /*#__PURE__*/function () {
 
     _defineProperty(this, "loaded", void 0);
 
+    _defineProperty(this, "loadedXml", void 0);
+
+    _defineProperty(this, "xml", void 0);
+
     this.chapter = chapter;
     this.constructor.cache[chapter] = this;
-  }
+  } //Gets the chapter from the cache
+
 
   _createClass(OrsChapter, [{
     key: "load",
-    value: function () {
+    value: //Fetches the contents of the original chapter page on the official ORS site
+    //Transforms it in to a well-formed HTML document
+    function () {
       var _load = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
         var _this = this;
 
@@ -79,8 +75,7 @@ var OrsChapter = /*#__PURE__*/function () {
 
                   _this.doc = parser.parseFromString(html, "text/html"); //createa nodeList of all the <b> elements in the body
 
-                  var headings = _this.doc.querySelectorAll("b"); // console.log(headings);
-
+                  var headings = _this.doc.querySelectorAll("b");
 
                   for (var i = 0; i < headings.length; i++) {
                     var boldParent = headings[i];
@@ -90,8 +85,7 @@ var OrsChapter = /*#__PURE__*/function () {
                     var chapter = void 0,
                         section = void 0,
                         key = void 0,
-                        val = void 0; //console.log(strings);
-                    // if array has oonly one element,
+                        val = void 0; // if array has only one element,
                     // then we know this doesn't follow the traditional statute pattern.
 
                     if (strings.length === 1) {
@@ -104,8 +98,7 @@ var OrsChapter = /*#__PURE__*/function () {
                       var numbers = key.split('.');
                       chapter = numbers[0];
                       section = numbers[1];
-                    } //console.log(key);
-                    //might need to change this one to remove parseInt
+                    } //might need to change this one to remove parseInt
 
 
                     _this.sectionTitles[parseInt(section)] = val;
@@ -130,18 +123,19 @@ var OrsChapter = /*#__PURE__*/function () {
       }
 
       return load;
-    }()
+    }() //Outputs the document as an HTML string
+
   }, {
     key: "toString",
     value: function toString() {
       var serializer = new XMLSerializer();
       var subset = this.doc.querySelector(".WordSection1");
       return serializer.serializeToString(subset);
-    }
+    } //Inserts anchors as div tags in the doc.
+
   }, {
     key: "injectAnchors",
     value: function injectAnchors() {
-      // Inserts anchors as div tags in the doc.
       for (var prop in this.sectionTitles) {
         var headingDiv = this.doc.createElement('div');
         headingDiv.setAttribute('id', prop);
@@ -151,45 +145,35 @@ var OrsChapter = /*#__PURE__*/function () {
         var target = this.sectionHeadings[prop];
         target.parentNode.insertBefore(headingDiv, target);
       }
-    }
+    } //Creates the scrollable table of contents on the big modal
+
   }, {
-    key: "buildToC",
-    value: function buildToC() {
-      //console.log(this.sectionTitles);
+    key: "buildToc",
+    value: function buildToc() {
       var toc = [];
 
       for (var key in this.sectionTitles) {
         var val = this.sectionTitles[key];
         toc.push("<li><a href=\"#".concat(key, "\">").concat(key, " - ").concat(val, "</a></li>"));
-      } //console.log(toc);
-
+      }
 
       var joinedToc = toc.join(' ');
       return joinedToc;
-    }
+    } //Creates the list of volumes in the dropdown selector on the big modal
+
   }, {
     key: "buildVolumes",
     value: function buildVolumes() {
+      //Need to replace this array with a dynamically generated list
       var volumes = ["Courts, Or. Rules of Civil Procedure", "Business Organizations, Commercial Code", "Landlord-Tenant, Domestic Relations, Probate", "Criminal Procedure, Crimes", "State Government, Government Procedures, Land Use", "Local Government, Pub. Employees, Elections", "Pub. Facilities & Finance", "Revenue & Taxation", "Education & Culture", "Highways, Military", "Juvenile Code, Human Services", "Pub. Health", "Housing, Environment", "Drugs & Alcohol, Fire Protection, Natural Resources", "Water Resources, Agriculture & Food", "Trade Practices, Labor & Employment", "Occupations", "Financial Institutions, Insurance", "Utilities, Vehicle Code, Watercraft, Aviation, Constitutions"];
       var options = volumes.map(function (v, index) {
-        return "<option value=\"".concat(index + 1, "\">Volume ").concat(index + 1, " - ").concat(v, "</option>");
+        return "<option id=\"".concat(index + 1, "\" value=\"").concat(index + 1, "\">Volume ").concat(index + 1, " - ").concat(v, "</option>");
       });
       this.volumeNames = options;
       var optionsHtml = options.join("\n");
       return "<select id='dropdown'>" + optionsHtml + "</select>";
-    }
-  }, {
-    key: "linkVolumes",
-    value: function linkVolumes(volumeNames) {
-      var volumeLinks = [];
+    } //Highlights a selected section on the page
 
-      for (var i = 0; i < volumeNames.length; i++) {
-        volumeLinks[i] = "<a href=#" + volumeNames[i] + "</a>";
-      }
-
-      ;
-      return volumeLinks;
-    }
   }, {
     key: "highlight",
     value: function highlight(section, endSection) {
@@ -202,16 +186,14 @@ var OrsChapter = /*#__PURE__*/function () {
       var secondNode = this.doc.getElementById(endSection);
       console.log(secondNode);
       range.setStartBefore(firstNode);
-      range.setEnd(secondNode.parentNode, secondNode.parentNode.childNodes.length); //let nextParagraph = firstNode.parentNode.nextSibling.nextSibling;
-      //range.setEnd(nextParagraph, nextParagraph.childNodes.length);
-
+      range.setEnd(secondNode.parentNode, secondNode.parentNode.childNodes.length);
       console.log(range);
       var newParent = this.doc.createElement('div');
-      newParent.setAttribute('style', 'background-color:yellow;'); //range.surroundContents(newParent);
-
+      newParent.setAttribute('style', 'background-color:yellow;');
       var contents = range.extractContents();
       console.log(contents);
-    }
+    } //Clones the contents inside a range
+
   }, {
     key: "clone",
     value: function clone(sectionNumber, endSection) {
@@ -226,11 +208,8 @@ var OrsChapter = /*#__PURE__*/function () {
       var contents = range.cloneContents();
       console.log(contents);
       return contents;
-    }
-  }, {
-    key: "getSection",
-    value: function getSection(section) {//do we want to do sections inside this class? or do them in their own class?
-    }
+    } //Returns the next section in the document for use in building ranges
+
   }, {
     key: "getNextSection",
     value: function getNextSection(sectionNum) {
@@ -243,6 +222,84 @@ var OrsChapter = /*#__PURE__*/function () {
           return nextSection;
         }
       }
+    } //Loads the XML file containing the names of all Volumes, Titles, and Chapters
+
+  }, {
+    key: "loadXml",
+    value: function () {
+      var _loadXml = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2(volumeNumber) {
+        var _this2 = this;
+
+        var url;
+        return _regeneratorRuntime().wrap(function _callee2$(_context2) {
+          while (1) {
+            switch (_context2.prev = _context2.next) {
+              case 0:
+                if (!this.loadedXml) {
+                  _context2.next = 2;
+                  break;
+                }
+
+                return _context2.abrupt("return", Promise.resolve(true));
+
+              case 2:
+                url = "ors.xml";
+                fetch(url).then(function (response) {
+                  return response.text();
+                }).then(function (data) {
+                  var parser = new DOMParser();
+                  var xmlDoc = parser.parseFromString(data, "application/xml");
+                  _this2.xml = xmlDoc;
+                  console.log(xml); //currently we are hardcoading the volume number, this will eventually
+                  //be replaced by a variable linked to a change event 
+                  //on the volume dropdown selector in the big modal
+
+                  /*
+                  var volumeNumber = "1";
+                  console.log(volumeNumber);
+                  this.getChaptersByVolume(xml, volumeNumber);
+                  */
+
+                  _this2.loadXml = true;
+                });
+
+              case 4:
+              case "end":
+                return _context2.stop();
+            }
+          }
+        }, _callee2, this);
+      }));
+
+      function loadXml(_x) {
+        return _loadXml.apply(this, arguments);
+      }
+
+      return loadXml;
+    }() //Returns a list of chapters as links based on the selected volume
+
+  }, {
+    key: "getChaptersByVolume",
+    value: function getChaptersByVolume(volumeNumber) {
+      //currently we are hardcoading the volume number, this will eventually
+      //be replaced by a variable linked to a change event 
+      //on the volume dropdown selector in the big modal
+      var volumeNumber = "1";
+      var chapters = this.xml.querySelectorAll("#vol-" + volumeNumber + " chapter");
+      console.log(chapters);
+      var links = [];
+
+      for (var i = 0; i < chapters.length; i++) {
+        var chapter = chapters[i];
+        var parts = chapter.id.split("-");
+        var chapterNum = parts[1];
+        var chapterName = chapter.innerText;
+        var link = "<a href=\"#\" data-action=\"show-ors\" data-chapter=\"".concat(chapterNum, "\" data-section=\"1\">").concat(chapterName, "</a>");
+        links.push(link);
+      }
+
+      console.log(links);
+      return links.join("\n");
     }
   }], [{
     key: "getCached",
