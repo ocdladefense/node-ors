@@ -101,7 +101,7 @@ class OrsChapter {
     injectAnchors() {        
         for (var prop in this.sectionTitles) {
             var headingDiv = this.doc.createElement('div');
-            headingDiv.setAttribute('id', prop);
+            headingDiv.setAttribute('id', "section-"+prop);
             headingDiv.setAttribute('class', 'ocdla-heading');
             headingDiv.setAttribute('data-chapter', this.chapterNum);
             headingDiv.setAttribute('data-section', prop);
@@ -119,7 +119,7 @@ class OrsChapter {
 
         for (let key in this.sectionTitles) {
             let val = this.sectionTitles[key];
-            toc.push(`<li><span class="section-number">${this.chapterNum}.${key}</span><a href="#${key}">${val}</a></li>`);
+            toc.push(`<li><span class="section-number">${this.chapterNum}.${key}</span><a data-action="view-section" data-section="${key}" href="#">${val}</a></li>`);
         }
 
         var joinedToc = toc.join(' ');
