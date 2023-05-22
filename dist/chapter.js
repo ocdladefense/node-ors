@@ -159,18 +159,23 @@ var OrsChapter = /*#__PURE__*/function () {
       var contents = range.extractContents();
       console.log(contents);
     }
+  }, {
+    key: "cloneFromIds",
+    value: function cloneFromIds(startId, endId) {
+      var startNode = this.doc.getElementById(startId);
+      console.log(startNode);
+      var endNode = this.doc.getElementById(endId);
+      console.log(endNode);
+      return this.clone(startNode, endNode);
+    }
 
     // Clones the contents inside a range.
   }, {
     key: "clone",
-    value: function clone(startSection, endSection) {
-      var range = this.doc.createRange();
-      var firstNode = this.doc.getElementById(startSection);
-      console.log(firstNode);
-      var secondNode = this.doc.getElementById(endSection);
-      console.log(secondNode);
-      range.setStartBefore(firstNode);
-      range.setEndBefore(secondNode);
+    value: function clone(startNode, endNode) {
+      var range = document.createRange();
+      range.setStartBefore(startNode);
+      range.setEndBefore(endNode);
       console.log(range);
       var contents = range.cloneContents();
       console.log(contents);

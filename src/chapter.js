@@ -151,16 +151,24 @@ class OrsChapter {
         console.log(contents);
     }
 
-    // Clones the contents inside a range.
-    clone(startSection, endSection) {
-        let range = this.doc.createRange();
+    cloneFromIds(startId, endId) {
 
-        var firstNode = this.doc.getElementById(startSection);
-        console.log(firstNode);
-        var secondNode = this.doc.getElementById(endSection);
-        console.log(secondNode);
-        range.setStartBefore(firstNode);
-        range.setEndBefore(secondNode);
+        var startNode = this.doc.getElementById(startId);
+        console.log(startNode);
+        var endNode = this.doc.getElementById(endId);
+        console.log(endNode);
+
+        return this.clone(startNode, endNode);
+    }
+
+
+    // Clones the contents inside a range.
+    clone(startNode, endNode) {
+
+        let range = document.createRange();
+
+        range.setStartBefore(startNode);
+        range.setEndBefore(endNode);
 
         console.log(range);
 
