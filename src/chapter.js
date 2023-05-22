@@ -154,8 +154,14 @@ class OrsChapter {
     cloneFromIds(startId, endId) {
 
         var startNode = this.doc.getElementById(startId);
+        if(null == startNode) {
+            throw new Error("NODE_NOT_FOUND_ERROR: (#"+startId+")");
+        }
         console.log(startNode);
         var endNode = this.doc.getElementById(endId);
+        if (null == startNode) {
+            throw new Error("NODE_NOT_FOUND_ERROR: (#" + endId + ")");
+        }
         console.log(endNode);
 
         return this.clone(startNode, endNode);
@@ -182,10 +188,13 @@ class OrsChapter {
     // Given a valid section number, 
     // returns the next section in this ORS chapter.
     // Used for building ranges.
-    getNextSection(sectionNum) {
+    getNextSectionId(sectionNum) {
         var headings = this.doc.querySelectorAll(".ocdla-heading");
         var section = this.doc.getElementById(sectionNum);
 
+        if(null == section) {
+            throw new Error("NODE_NOT_FOUND_ERROR: Could not locate "+sectionNum);
+        }
         for (let i = 0; i < headings.length; i++) {
             if (headings.item(i) == section) {
                 let nextSection = headings.item(i + 1);

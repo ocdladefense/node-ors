@@ -163,8 +163,14 @@ var OrsChapter = /*#__PURE__*/function () {
     key: "cloneFromIds",
     value: function cloneFromIds(startId, endId) {
       var startNode = this.doc.getElementById(startId);
+      if (null == startNode) {
+        throw new Error("NODE_NOT_FOUND_ERROR: (#" + startId + ")");
+      }
       console.log(startNode);
       var endNode = this.doc.getElementById(endId);
+      if (null == startNode) {
+        throw new Error("NODE_NOT_FOUND_ERROR: (#" + endId + ")");
+      }
       console.log(endNode);
       return this.clone(startNode, endNode);
     }
@@ -186,10 +192,13 @@ var OrsChapter = /*#__PURE__*/function () {
     // returns the next section in this ORS chapter.
     // Used for building ranges.
   }, {
-    key: "getNextSection",
-    value: function getNextSection(sectionNum) {
+    key: "getNextSectionId",
+    value: function getNextSectionId(sectionNum) {
       var headings = this.doc.querySelectorAll(".ocdla-heading");
       var section = this.doc.getElementById(sectionNum);
+      if (null == section) {
+        throw new Error("NODE_NOT_FOUND_ERROR: Could not locate " + sectionNum);
+      }
       for (var i = 0; i < headings.length; i++) {
         if (headings.item(i) == section) {
           var nextSection = headings.item(i + 1);
