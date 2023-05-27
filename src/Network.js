@@ -1,6 +1,7 @@
 import {OrsChapter} from "./chapter.js";
+import {Http} from "../../lib-http/src/http.js";
 
-export { Network };
+
 
 /**
  * Load a chapter of the Oregon Revised Statutes (ORS).
@@ -10,18 +11,39 @@ export { Network };
 const Network = (function () {
     const cache = {};
 
+    let networkUrl = null;
+
 
     // Gets the chapter from the cache
-    function getCache(chapter) {
-        return cache[chapter];
+    function getCache(params) {
+        return cache[params.chapter];
+    }
+
+    function setCache(params, value) {
+        cache[params.chapter] = value;
+    }
+
+    function setUrl(url) {
+        networkUrl = url;
     }
 
 
-    async function fetchOrs(chapterNum) {
-        let chapter = getCache(chapterNum) || new OrsChapter(chapterNum);
-        cache[chapterNum] = chapter;
+    async function fetchOrs(params) {
 
-        let doc = await chapter.load();
+
+
+        let chapter = getCache(params);
+        
+        if(null == chapter) {
+            chapter = new OrsChapter(params.chapter);
+            let url = networkUrl + "?" + Http.formatQueryString(params);
+
+            let resp = await fetch(url);
+
+            setCache(params, chapter);
+
+            let doc = await chapter.load(resp);
+        }
 
         if (!chapter.formatted) {
             chapter.parse();
@@ -33,6 +55,11 @@ const Network = (function () {
 
     return {
         fetchOrs: fetchOrs,
-        getCache: getCache
+        getCache: getCache,
+        setUrl: setUrl
     };
 })();
+
+
+
+export default Network;

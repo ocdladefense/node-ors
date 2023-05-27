@@ -36,13 +36,10 @@ class OrsChapter {
 
     // Fetches the contents of the original ORS chapter from the Oregon Legislature web site.
     // Transforms it in to a well-formed HTML document.
-    async load() {
+    async load(resp) {
         if (this.loaded) { return Promise.resolve(this.doc); }
 
-        return fetch("index.php?chapter=" + this.chapterNum)
-        .then(function (resp) {
-            return resp.arrayBuffer();
-        })
+        return resp.arrayBuffer()
         .then(function (buffer) {
             const decoder = new TextDecoder("iso-8859-1");
             return decoder.decode(buffer);
