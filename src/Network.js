@@ -1,5 +1,5 @@
 import {OrsChapter} from "./chapter.js";
-import {Http,HttpClient} from "../../lib-http/src/http.js";
+import {Url} from "../../lib-http/src/Url.js";
 
 
 
@@ -36,7 +36,7 @@ const Network = (function () {
         
         if(null == chapter) {
             chapter = new OrsChapter(params.chapter);
-            let url = networkUrl + "?" + Http.formatQueryString(params);
+            let url = networkUrl + "?" + Url.formatQueryString(params);
 
             let resp = await fetch(url);
 
