@@ -1,5 +1,5 @@
-import {OrsChapter} from "./chapter.js";
-import {Url} from "../../lib-http/src/Url.js";
+import {OrsChapter} from "./OrsChapter.js";
+import {Url} from "../../lib-http/Url.js";
 
 
 
