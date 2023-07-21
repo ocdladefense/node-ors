@@ -13,7 +13,7 @@ class OrsChapter {
     sectionTitles = {};
 
     sectionHeadings = {};
-    
+
     // Boolean indicating if the chapter's XML document has been loaded.
     loaded = false;
 
@@ -40,19 +40,19 @@ class OrsChapter {
         if (this.loaded) { return Promise.resolve(this.doc); }
 
         return resp.arrayBuffer()
-        .then(function (buffer) {
-            const decoder = new TextDecoder("iso-8859-1");
-            return decoder.decode(buffer);
-        })
-        .then((html) => {
-            
-            const parser = new DOMParser();
+            .then(function (buffer) {
+                const decoder = new TextDecoder("iso-8859-1");
+                return decoder.decode(buffer);
+            })
+            .then((html) => {
 
-            // Tell the parser to look for html
-            this.doc = parser.parseFromString(html, "text/html");
-            this.loaded = true;
-            return this.doc;
-        });
+                const parser = new DOMParser();
+
+                // Tell the parser to look for html
+                this.doc = parser.parseFromString(html, "text/html");
+                this.loaded = true;
+                return this.doc;
+            });
     }
 
 
@@ -95,10 +95,10 @@ class OrsChapter {
     // Inserts anchors as div tags in the doc.
     // Note: this affects the underlying structure 
     //  of the XML document.
-    injectAnchors() {        
+    injectAnchors() {
         for (var prop in this.sectionTitles) {
             var headingDiv = this.doc.createElement('div');
-            headingDiv.setAttribute('id', "section-"+prop);
+            headingDiv.setAttribute('id', "section-" + prop);
             headingDiv.setAttribute('class', 'ocdla-heading');
             headingDiv.setAttribute('data-chapter', this.chapterNum);
             headingDiv.setAttribute('data-section', prop);
@@ -106,7 +106,11 @@ class OrsChapter {
             let target = this.sectionHeadings[prop];
             target.parentNode.insertBefore(headingDiv, target);
         }
-
+        var subset = this.doc.querySelector(".WordSection1");
+        var headingDiv = this.doc.createElement('div');
+        headingDiv.setAttribute('class', 'ocdla-heading');
+        headingDiv.setAttribute('id', "end");
+        subset.appendChild(headingDiv);
         this.formatted = true;
     }
 
@@ -151,8 +155,8 @@ class OrsChapter {
     cloneFromIds(startId, endId) {
 
         var startNode = this.doc.getElementById(startId);
-        if(null == startNode) {
-            throw new Error("NODE_NOT_FOUND_ERROR: (#"+startId+")");
+        if (null == startNode) {
+            throw new Error("NODE_NOT_FOUND_ERROR: (#" + startId + ")");
         }
         console.log(startNode);
         var endNode = this.doc.getElementById(endId);
@@ -201,8 +205,8 @@ class OrsChapter {
         var headings = this.doc.querySelectorAll(".ocdla-heading");
         var section = this.doc.getElementById(sectionNum);
 
-        if(null == section) {
-            throw new Error("NODE_NOT_FOUND_ERROR: Could not locate "+sectionNum);
+        if (null == section) {
+            throw new Error("NODE_NOT_FOUND_ERROR: Could not locate " + sectionNum);
         }
         for (let i = 0; i < headings.length; i++) {
             if (headings.item(i) == section) {
@@ -213,6 +217,6 @@ class OrsChapter {
 
     }
 
-    
+
 
 }

@@ -87,6 +87,11 @@ class OrsChapter {
       let target = this.sectionHeadings[prop];
       target.parentNode.insertBefore(headingDiv, target);
     }
+    var subset = this.doc.querySelector(".WordSection1");
+    var headingDiv = this.doc.createElement('div');
+    headingDiv.setAttribute('class', 'ocdla-heading');
+    headingDiv.setAttribute('id', "end");
+    subset.appendChild(headingDiv);
     this.formatted = true;
   }
   buildToc() {
