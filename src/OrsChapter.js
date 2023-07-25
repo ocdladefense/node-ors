@@ -1,5 +1,7 @@
 export { OrsChapter };
 
+const gSubRe = /^\(([0-9a-zA-Z]+)\)(.*)/gm;
+const subRe = /^\(([0-9a-zA-Z]+)\)(.*)/;
 
 class OrsChapter {
 
@@ -8,6 +10,7 @@ class OrsChapter {
 
     // The chapter's underlying XML document.
     doc = null;
+    docTwo = null;
 
     // What is the difference between these two variables.
     sectionTitles = {};
@@ -33,11 +36,152 @@ class OrsChapter {
         return serializer.serializeToString(subset);
     }
 
+    init() {
+
+
+
+        let matches = retrievePTags();
+
+        //this regex will be used to split and make the looking for array /([0-9a-zA-Z]+)/g
+        const wordDoc = this.doc.getElementsByClassName("WordSection1")[0].innerText;
+        for (every section in this.doc) {
+            let startId = "section-" + parseInt(this.section);
+            let endId = this.getNextSectionId(startId);
+            //console.log(endId);
+            let cloned = this.cloneFromIds(startId, endId);
+            let html = serializer.serializeToString(cloned);
+            let sectionNumber = "130";
+            const section = this.doc.createElement("div");
+            section.setAttribute("id", sectionNumber);
+
+            iterateMatches(matches, 0, section, sectionNumber);
+            this.docTwo.appendChild(section);
+        }
+
+
+
+    }
+
+    getSection(id) {
+        //parse the id get section number
+        //return this.docTwo.getelementbyid(id)
+    }
+
+    retrievePTags() {
+        // const subs = doc.querySelectorAll("p");
+        const wordDoc = this.doc.getElementsByClassName("WordSection1")[0].innerText;
+
+        let matches = wordDoc.match(gSubRe);
+
+        return matches;
+    }
+
+    iterateMatches(matches, currentIndex, parent, sectionNumber, lastLevel = '0') {
+        //if we leave off at a roman numeral then 
+        if (currentIndex >= matches.length) {
+            return parent;
+        }
+
+        //for (var i = currentIndex; i < matches.length; i++) {
+        // let match = fun(matches, currentIndex);
+        let match = matches[currentIndex].match(subRe);
+        let nextMatch = matches[currentIndex + 1];
+        // 0 should be full text?
+        // 1 is id
+        // 2 is text without subsection
+        console.log(match[1]); // should be id again
+        let id = match[1];
+        let text = match[2];
+
+        let level = findLevel(id, nextMatch);
+        let willBeChild = level > lastLevel;
+        //we need to inspect parent elements and append the id
+        //id = parent.getAttribute("id") + "-" + id;
+        let element = buildElement(id, text, level, sectionNumber);
+
+        if (level == lastLevel) {
+            parent.appendChild(element);
+
+        } else if (level > lastLevel) {
+            parent = parent.lastChild;
+
+            parent.appendChild(element);
+
+        } else if (level < lastLevel) {
+            if ((lastLevel - level) == 1) {
+                parent = parent.parentNode;
+            } else if ((lastLevel - level) == 2) {
+                parent = parent.parentNode.parentNode;
+            } else if ((lastLevel - level) == 3) {
+                parent = parent.parentNode.parentNode.parentNode;
+            }
+
+            parent.appendChild(element);
+        }
+
+
+        // identify subsections
+        // build subsection grouping elements
+
+        iterateMatches(matches, ++currentIndex, parent, sectionNumber, level);
+
+        //}
+    }
+
+    buildElement(id, text, level, sectionNumber) {
+        let sub = this.doc.createElement("div");
+        sub.setAttribute("id", sectionNumber + "-" + id);
+        sub.setAttribute("class", "level-" + level);
+
+        let span = this.doc.createElement("span");
+        span.setAttribute("class", "subsection");
+        span.innerText = '(' + id + ')';
+
+        let theText = this.doc.createTextNode(text);
+
+        sub.appendChild(span);
+        sub.appendChild(theText);
+
+        return sub;
+    }
+
+    findLevel(text, nextMatch) {
+        let subNumRe = /^[0-9]+/;
+        let subUpperRe = /^[A-Z]+/;
+        let subRe = /^\(([0-9a-zA-Z]+)\)(.*)/;
+
+        let nextId;
+
+        if (nextMatch != null) {
+            nextId = nextMatch.match(subRe)[1];
+        }
+
+        if (text.match(subNumRe)) {
+            return '0';
+        } else if (!isRomanNumeral(text, nextId) && !text.match(subUpperRe)) {
+            return '1';
+        } else if (text.match(subUpperRe)) {
+            return '2';
+        } else if (isRomanNumeral(text, nextId)) {
+            return '3';
+        }
+    }
+
+    isRomanNumeral(text, nextText) {
+        romanReg = /^[ivx]+/
+        if (nextText == null) {
+            return text.match(romanReg);
+        }
+        return (text.match(romanReg) && (nextText.match(romanReg) || text.length > 1));
+    }
+
+
 
     // Fetches the contents of the original ORS chapter from the Oregon Legislature web site.
     // Transforms it in to a well-formed HTML document.
     async load(resp) {
         if (this.loaded) { return Promise.resolve(this.doc); }
+
 
         return resp.arrayBuffer()
             .then(function (buffer) {
@@ -51,6 +195,10 @@ class OrsChapter {
                 // Tell the parser to look for html
                 this.doc = parser.parseFromString(html, "text/html");
                 this.loaded = true;
+                if (!this.formatted) {
+                    this.parse();
+                    this.injectAnchors();
+                }
                 return this.doc;
             });
     }
