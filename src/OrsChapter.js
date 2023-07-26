@@ -23,6 +23,8 @@ class OrsChapter {
     // Boolean indicating if the chapter's XML document has been modified.
     injected = false;
 
+    doneBuilding = false;
+
 
     constructor(chapterNum) {
         this.chapterNum = chapterNum;
@@ -38,40 +40,67 @@ class OrsChapter {
 
     init() {
 
-
-
-        let matches = retrievePTags();
-
         //this regex will be used to split and make the looking for array /([0-9a-zA-Z]+)/g
-        const wordDoc = this.doc.getElementsByClassName("WordSection1")[0].innerText;
-        for (every section in this.doc) {
-            let startId = "section-" + parseInt(this.section);
+        //const wordDoc = this.doc.getElementsByClassName("WordSection1")[0].innerText;
+        this.docTwo = new Document();
+        let wordSection = this.docTwo.createElement("div");
+        wordSection.setAttribute("class", "WordSection1");
+
+        for (var prop in this.sectionTitles) {
+            // console.log(prop);
+            let startId = "section-" + parseInt(prop);
             let endId = this.getNextSectionId(startId);
-            //console.log(endId);
-            let cloned = this.cloneFromIds(startId, endId);
-            let html = serializer.serializeToString(cloned);
-            let sectionNumber = "130";
-            const section = this.doc.createElement("div");
-            section.setAttribute("id", sectionNumber);
 
-            iterateMatches(matches, 0, section, sectionNumber);
-            this.docTwo.appendChild(section);
+            let clonedSection = this.cloneFromIds(startId, endId);
+            let matches = this.retrievePTags(clonedSection);
+            const section = this.docTwo.createElement("div");
+
+            section.setAttribute("id", prop);
+
+            this.iterateMatches(matches, 0, section, prop);
+            wordSection.appendChild(section);
         }
-
-
-
+        this.docTwo.appendChild(wordSection);
+        //console.log(this.docTwo);
     }
 
     getSection(id) {
         //parse the id get section number
-        //return this.docTwo.getelementbyid(id)
+        return this.docTwo.getElementById(id);
     }
 
-    retrievePTags() {
-        // const subs = doc.querySelectorAll("p");
-        const wordDoc = this.doc.getElementsByClassName("WordSection1")[0].innerText;
+    // there are exceptions!!!
+    // such as (5)(a).
+    // it will find the 5, and put subsection level to 0.
+    // HOWEVER, we are actually supposed to be on (a).
+    // the level is supposed to be 1.
+    // the next subsection in the list is (A).
+    // this is ONLY EXPECTED when level is 1. Not when level is 0.
+    // so it breaks. Hurray!
 
-        let matches = wordDoc.match(gSubRe);
+    retrievePTags(doc) {
+        let text = "";
+        let children = doc.children;
+
+        for (var index in children) {
+            let child = children[index];
+
+            if (index == 0) {
+                child = child.querySelector('b');
+                child = child.nextSibling;
+            }
+
+            let childText = child.innerText;
+            
+            if (childText == null || childText == "") {
+                continue;
+            }
+
+            childText = childText.trim().replaceAll('\n', ' ');
+            text += childText + '\n';
+        }
+
+        let matches = text.match(gSubRe);
 
         return matches;
     }
@@ -86,18 +115,18 @@ class OrsChapter {
         // let match = fun(matches, currentIndex);
         let match = matches[currentIndex].match(subRe);
         let nextMatch = matches[currentIndex + 1];
+        console.log(match);
         // 0 should be full text?
         // 1 is id
         // 2 is text without subsection
-        console.log(match[1]); // should be id again
         let id = match[1];
         let text = match[2];
 
-        let level = findLevel(id, nextMatch);
+        let level = this.findLevel(id, nextMatch);
         let willBeChild = level > lastLevel;
         //we need to inspect parent elements and append the id
         //id = parent.getAttribute("id") + "-" + id;
-        let element = buildElement(id, text, level, sectionNumber);
+        let element = this.buildElement(id, text, level, sectionNumber);
 
         if (level == lastLevel) {
             parent.appendChild(element);
@@ -123,21 +152,21 @@ class OrsChapter {
         // identify subsections
         // build subsection grouping elements
 
-        iterateMatches(matches, ++currentIndex, parent, sectionNumber, level);
+        this.iterateMatches(matches, ++currentIndex, parent, sectionNumber, level);
 
         //}
     }
 
     buildElement(id, text, level, sectionNumber) {
-        let sub = this.doc.createElement("div");
+        let sub = this.docTwo.createElement("div");
         sub.setAttribute("id", sectionNumber + "-" + id);
         sub.setAttribute("class", "level-" + level);
 
-        let span = this.doc.createElement("span");
+        let span = this.docTwo.createElement("span");
         span.setAttribute("class", "subsection");
         span.innerText = '(' + id + ')';
 
-        let theText = this.doc.createTextNode(text);
+        let theText = this.docTwo.createTextNode(text);
 
         sub.appendChild(span);
         sub.appendChild(theText);
@@ -158,17 +187,17 @@ class OrsChapter {
 
         if (text.match(subNumRe)) {
             return '0';
-        } else if (!isRomanNumeral(text, nextId) && !text.match(subUpperRe)) {
+        } else if (!this.isRomanNumeral(text, nextId) && !text.match(subUpperRe)) {
             return '1';
         } else if (text.match(subUpperRe)) {
             return '2';
-        } else if (isRomanNumeral(text, nextId)) {
+        } else if (this.isRomanNumeral(text, nextId)) {
             return '3';
         }
     }
 
     isRomanNumeral(text, nextText) {
-        romanReg = /^[ivx]+/
+        let romanReg = /^[ivx]+/;
         if (nextText == null) {
             return text.match(romanReg);
         }
@@ -306,12 +335,10 @@ class OrsChapter {
         if (null == startNode) {
             throw new Error("NODE_NOT_FOUND_ERROR: (#" + startId + ")");
         }
-        console.log(startNode);
         var endNode = this.doc.getElementById(endId);
         if (null == startNode) {
             throw new Error("NODE_NOT_FOUND_ERROR: (#" + endId + ")");
         }
-        console.log(endNode);
 
         return this.clone(startNode, endNode);
     }
@@ -325,10 +352,7 @@ class OrsChapter {
         range.setStartBefore(startNode);
         range.setEndBefore(endNode);
 
-        console.log(range);
-
         var contents = range.cloneContents();
-        console.log(contents);
 
         // Find all span elements within range
         var spans = contents.querySelectorAll("span");
