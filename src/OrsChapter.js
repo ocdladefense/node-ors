@@ -180,20 +180,16 @@ class OrsChapter {
         console.log(range);
 
         var contents = range.cloneContents();
-        console.log(contents);
 
-        // Find all span elements within range
         var spans = contents.querySelectorAll("span");
-
         // remove styling from each span
         for (var elements in spans) {
             let element = spans[elements];
-
             if (element.style) {
                 element.style = null;
             }
         }
-
+        console.log(contents);
         return contents;
     }
 
