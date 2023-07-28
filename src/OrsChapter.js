@@ -50,17 +50,17 @@ class OrsChapter {
             // console.log(prop);
             let startId = "section-" + parseInt(prop);
             let endId = this.getNextSectionId(startId);
-
+            let header, matches;
             let clonedSection = this.cloneFromIds(startId, endId);
-            let matches = this.retrievePTags(clonedSection);
-            console.log(matches);
+            [header, matches] = this.retrievePTags(clonedSection);
 
             const section = this.docTwo.createElement("div");
 
-            section.setAttribute("id", prop);
+            section.setAttribute("id", "section-" + prop);
             //if matches are returned as just a string which means no subsections exist for that section then you just build the element with the text that is stored in matches and append it to the section
             if (typeof (matches) == "string") {
-                let element = this.buildElement(prop, matches, 0, prop);
+                console.log("hi!");
+                let element = this.buildElement("description", "section-" + prop + "-description", matches, 0);
                 section.appendChild(element);
             }
             else {
@@ -69,13 +69,13 @@ class OrsChapter {
             wordSection.appendChild(section);
         }
         this.docTwo.appendChild(wordSection);
-        //console.log(this.docTwo);
+        console.log(this.docTwo);
     }
 
     getSection(id) {
         //parse the id get section number
-        return this.docTwo.getElementById(id);
-    }
+        return this.docTwo.getElementById("section-" + id);
+    } // section-17-1-a
 
     // there are exceptions!!!
     // such as (5)(a).
@@ -86,28 +86,27 @@ class OrsChapter {
     // this is ONLY EXPECTED when level is 1. Not when level is 0.
     // so it breaks. Hurray!
 
-    retrievePTags(doc) {
+    retrievePTags(section) {
         let text = "";
-        let children = doc.children;
-        console.log(children.length);
-        let fn = function (match, offset, original) {
-            //console.log(match, offset, original);
-            let duo = match.slice(0, 3) + "\n" + match.slice(3);
-            return duo;
-            //return (match + "\n");
-        };
-        for (var index in children) {
-            let child = children[index];
+        let pTags = section.children;
+        //let header = "";
 
-            if (index == 0) {
-                child = child.querySelector('b');
-                child = child.nextSibling;
-            }
+        let fn = function (match, p1, offset, original) {
+            let duo = match.split(')(');
+            return duo.join(")\n(");
+        };
+
+        let header = pTags[0].querySelector('b');
+        header = pTags[0].removeChild(header);
+        header = header.innerText;
+
+        for (var index in pTags) {
+            let child = pTags[index];
             let childText = "";
+
             if (child != null) {
                 childText = child.innerText;
             }
-
 
             if (childText == null || childText == "") {
                 continue;
@@ -120,15 +119,20 @@ class OrsChapter {
         //may need to actually retrieve the p tags and process each p tag with the regex
         //let matches = text.match(gSubRe);
         //let matches = text.replaceAll(/(^\([1-9a-zA-Z]+\)|(?<=\))\([1-9a-zA-Z]+\))/gm, fn);
-        let matches = text.replaceAll(/(^\([1-9a-zA-Z]+\)\([1-9a-zA-Z]+\))/gm, fn);
+        let matches = text.replaceAll(/(^\([0-9a-zA-Z]+\)\([0-9a-zA-Z]+\))/gm, fn);
+        /*
+        let matches = text.replaceAll(splitSubRe, fn);
+        while (matches.match(splitSubRe)) {
+            matches = matches.replaceAll(splitSubRe, fn);
+        }*/
         matches = matches.match(gSubRe);
+
+        //matches = matches.match(gSubRe);
         //matches = matches.split("\n");
         //console.log(matches, typeof (matches));
         //if there are no matches that means there arent any subsections so it just returns the text that was gotten 
-        if (matches == null) {
-            return text;
-        }
-        return matches;
+
+        return matches == null ? [header, text] : [header, matches];
     }
 
     iterateMatches(matches, currentIndex, parent, sectionNumber, lastLevel = '0') {
@@ -144,21 +148,30 @@ class OrsChapter {
         // let match = fun(matches, currentIndex);
         let match = matches[currentIndex].match(subRe);
         let nextMatch = matches[currentIndex + 1];
+
+        let id, divId, text, level;
+
+        console.log(matches[currentIndex]);
+
+        if (match == null) {
+            // not a subsection
+            // what do?
+            // nothing. we shouldn't handle this case, this is either descriptive text or not..?
+            // maybe handle for single section text like 701.002.
+            id = "description";
+            text = matches[currentIndex];
+            level = '0';
+        } else {
+            id = match[1];
+            text = "(" + id + ")" + match[2];
+            level = this.findLevel(id, nextMatch);
+        }
+
         //console.log(match);
         // 0 should be full text?
         // 1 is id
         // 2 is text without subsection
-        let id = match[1];
-        //let text = match[2];
-        let text = "(" + match[1] + ")" + match[2];
-        let level = this.findLevel(id, nextMatch);
-        let willBeChild = level > lastLevel;
-        //we need to inspect parent elements and append the id
-        id = parent.getAttribute("id") + "-" + id;
-        let element = this.buildElement(id, text, level, sectionNumber);
-        let lastChild = parent.children.length > 0 && parent.lastChild;
-        let grandParent = parent.parentNode;
-        let greatGrandParent = parent.parentNode && parent.parentNode.parentNode;
+
         if (level > lastLevel) {
             parent = parent.lastChild;
 
@@ -172,9 +185,13 @@ class OrsChapter {
             }
         }
         if (parent == null) {
-            console.log(lastChild, grandParent, greatGrandParent);
             throw new Error("Parent is null");
         }
+
+        divId = parent.getAttribute("id") + "-" + id;
+
+        let element = this.buildElement(id, divId, text, level);
+
         parent.appendChild(element);
         // identify subsections
         // build subsection grouping elements
@@ -184,14 +201,17 @@ class OrsChapter {
         //}
     }
 
-    buildElement(id, text, level, sectionNumber) {
+    buildElement(id, divId, text, level) {
         let sub = this.docTwo.createElement("div");
-        sub.setAttribute("id", id);
+        sub.setAttribute("id", divId);
         sub.setAttribute("class", "level-" + level);
 
         let span = this.docTwo.createElement("span");
         span.setAttribute("class", "subsection");
-        span.innerText = '(' + id + ')';
+
+        if (id != 'description') {
+            span.innerText = '(' + id + ')';
+        }
 
         let theText = this.docTwo.createTextNode(text);
 
