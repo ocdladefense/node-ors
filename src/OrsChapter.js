@@ -59,7 +59,6 @@ class OrsChapter {
             section.setAttribute("id", "section-" + prop);
             //if matches are returned as just a string which means no subsections exist for that section then you just build the element with the text that is stored in matches and append it to the section
             if (typeof (matches) == "string") {
-                console.log("hi!");
                 let element = this.buildElement("description", "section-" + prop + "-description", matches, 0);
                 section.appendChild(element);
             }
@@ -69,7 +68,6 @@ class OrsChapter {
             wordSection.appendChild(section);
         }
         this.docTwo.appendChild(wordSection);
-        console.log(this.docTwo);
     }
 
     getSection(id) {
@@ -150,8 +148,6 @@ class OrsChapter {
         let nextMatch = matches[currentIndex + 1];
 
         let id, divId, text, level;
-
-        console.log(matches[currentIndex]);
 
         if (match == null) {
             // not a subsection
