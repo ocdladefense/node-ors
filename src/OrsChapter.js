@@ -87,7 +87,6 @@ class OrsChapter {
     retrievePTags(section) {
         let text = "";
         let pTags = section.children;
-        //let header = "";
 
         let fn = function (match, p1, offset, original) {
             let duo = match.split(')(');
@@ -114,21 +113,10 @@ class OrsChapter {
             text += childText + '\n';
         }
 
-        //may need to actually retrieve the p tags and process each p tag with the regex
-        //let matches = text.match(gSubRe);
-        //let matches = text.replaceAll(/(^\([1-9a-zA-Z]+\)|(?<=\))\([1-9a-zA-Z]+\))/gm, fn);
-        let matches = text.replaceAll(/(^\([0-9a-zA-Z]+\)\([0-9a-zA-Z]+\))/gm, fn);
-        /*
-        let matches = text.replaceAll(splitSubRe, fn);
-        while (matches.match(splitSubRe)) {
-            matches = matches.replaceAll(splitSubRe, fn);
-        }*/
-        matches = matches.match(gSubRe);
 
-        //matches = matches.match(gSubRe);
-        //matches = matches.split("\n");
-        //console.log(matches, typeof (matches));
-        //if there are no matches that means there arent any subsections so it just returns the text that was gotten 
+        let matches = text.replaceAll(/(^\([0-9a-zA-Z]+\)\([0-9a-zA-Z]+\))/gm, fn);
+
+        matches = matches.match(gSubRe);
 
         return matches == null ? [header, text] : [header, matches];
     }
