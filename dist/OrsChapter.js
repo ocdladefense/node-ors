@@ -54,10 +54,23 @@ class OrsChapter {
     //parse the id get section number
     return this.docTwo.getElementById(id);
   }
+
+  // there are exceptions!!!
+  // such as (5)(a).
+  // it will find the 5, and put subsection level to 0.
+  // HOWEVER, we are actually supposed to be on (a).
+  // the level is supposed to be 1.
+  // the next subsection in the list is (A).
+  // this is ONLY EXPECTED when level is 1. Not when level is 0.
+  // so it breaks. Hurray!
+
   retrievePTags(doc) {
     let text = "";
     let children = doc.children;
-    //console.log(children.innerHTML);
+    let fn = function (match, offset, original) {
+      console.log(match, offset, original);
+      return match + "\n";
+    };
     for (var index in children) {
       let child = children[index];
       if (index == 0) {
@@ -71,11 +84,10 @@ class OrsChapter {
       childText = childText.trim().replaceAll('\n', ' ');
       text += childText + '\n';
     }
-    //const wordDoc = this.doc.getElementsByClassName("WordSection1")[0].innerText;
-
-    let matches = text.match(gSubRe);
-    //console.log(matches);
-
+    //may need to actually retrieve the p tags and process each p tag with the regex
+    //let matches = text.match(gSubRe);
+    matches = text.replaceAll(/(^\([1-9a-zA-Z]+\)|(?<=\))\([1-9a-zA-Z]+\))/gm, fn);
+    console.log(matches);
     return matches;
   }
   iterateMatches(matches, currentIndex, parent, sectionNumber, lastLevel = '0') {
@@ -99,11 +111,11 @@ class OrsChapter {
     //we need to inspect parent elements and append the id
     //id = parent.getAttribute("id") + "-" + id;
     let element = this.buildElement(id, text, level, sectionNumber);
-    if (level == lastLevel) {
-      parent.appendChild(element);
-    } else if (level > lastLevel) {
+    let lastChild = parent.children.length > 0 && parent.lastChild;
+    let grandParent = parent.parentNode;
+    let greatGrandParent = parent.parentNode && parent.parentNode.parentNode;
+    if (level > lastLevel) {
       parent = parent.lastChild;
-      parent.appendChild(element);
     } else if (level < lastLevel) {
       if (lastLevel - level == 1) {
         parent = parent.parentNode;
@@ -112,9 +124,12 @@ class OrsChapter {
       } else if (lastLevel - level == 3) {
         parent = parent.parentNode.parentNode.parentNode;
       }
-      parent.appendChild(element);
     }
-
+    if (parent == null) {
+      console.log(lastChild, grandParent, greatGrandParent);
+      throw new Error("Parent is null");
+    }
+    parent.appendChild(element);
     // identify subsections
     // build subsection grouping elements
 
