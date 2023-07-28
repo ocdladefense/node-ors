@@ -1,10 +1,13 @@
 export { OrsChapter };
+const gSubRe = /^\(([0-9a-zA-Z]+)\)(.*)/gm;
+const subRe = /^\(([0-9a-zA-Z]+)\)(.*)/;
 class OrsChapter {
   // Class variables
   chapterNum = null;
 
   // The chapter's underlying XML document.
   doc = null;
+  docTwo = null;
 
   // What is the difference between these two variables.
   sectionTitles = {};
@@ -15,6 +18,7 @@ class OrsChapter {
 
   // Boolean indicating if the chapter's XML document has been modified.
   injected = false;
+  doneBuilding = false;
   constructor(chapterNum) {
     this.chapterNum = chapterNum;
   }
@@ -24,6 +28,189 @@ class OrsChapter {
     const serializer = new XMLSerializer();
     const subset = this.doc.querySelector(".WordSection1");
     return serializer.serializeToString(subset);
+  }
+  init() {
+    //this regex will be used to split and make the looking for array /([0-9a-zA-Z]+)/g
+    //const wordDoc = this.doc.getElementsByClassName("WordSection1")[0].innerText;
+    this.docTwo = new Document();
+    let wordSection = this.docTwo.createElement("div");
+    wordSection.setAttribute("class", "WordSection1");
+    for (var prop in this.sectionTitles) {
+      // console.log(prop);
+      let startId = "section-" + parseInt(prop);
+      let endId = this.getNextSectionId(startId);
+      let header, matches;
+      let clonedSection = this.cloneFromIds(startId, endId);
+      [header, matches] = this.retrievePTags(clonedSection);
+      const section = this.docTwo.createElement("div");
+      section.setAttribute("id", "section-" + prop);
+      //if matches are returned as just a string which means no subsections exist for that section then you just build the element with the text that is stored in matches and append it to the section
+      if (typeof matches == "string") {
+        console.log("hi!");
+        let element = this.buildElement("description", "section-" + prop + "-description", matches, 0);
+        section.appendChild(element);
+      } else {
+        this.iterateMatches(matches, 0, section, prop);
+      }
+      wordSection.appendChild(section);
+    }
+    this.docTwo.appendChild(wordSection);
+    console.log(this.docTwo);
+  }
+  getSection(id) {
+    //parse the id get section number
+    return this.docTwo.getElementById("section-" + id);
+  }
+
+  // there are exceptions!!!
+  // such as (5)(a).
+  // it will find the 5, and put subsection level to 0.
+  // HOWEVER, we are actually supposed to be on (a).
+  // the level is supposed to be 1.
+  // the next subsection in the list is (A).
+  // this is ONLY EXPECTED when level is 1. Not when level is 0.
+  // so it breaks. Hurray!
+
+  retrievePTags(section) {
+    let text = "";
+    let pTags = section.children;
+    //let header = "";
+
+    let fn = function (match, p1, offset, original) {
+      let duo = match.split(')(');
+      return duo.join(")\n(");
+    };
+    let header = pTags[0].querySelector('b');
+    header = pTags[0].removeChild(header);
+    header = header.innerText;
+    for (var index in pTags) {
+      let child = pTags[index];
+      let childText = "";
+      if (child != null) {
+        childText = child.innerText;
+      }
+      if (childText == null || childText == "") {
+        continue;
+      }
+      childText = childText.trim().replaceAll('\n', ' ');
+      text += childText + '\n';
+    }
+
+    //may need to actually retrieve the p tags and process each p tag with the regex
+    //let matches = text.match(gSubRe);
+    //let matches = text.replaceAll(/(^\([1-9a-zA-Z]+\)|(?<=\))\([1-9a-zA-Z]+\))/gm, fn);
+    let matches = text.replaceAll(/(^\([0-9a-zA-Z]+\)\([0-9a-zA-Z]+\))/gm, fn);
+    /*
+    let matches = text.replaceAll(splitSubRe, fn);
+    while (matches.match(splitSubRe)) {
+        matches = matches.replaceAll(splitSubRe, fn);
+    }*/
+    matches = matches.match(gSubRe);
+
+    //matches = matches.match(gSubRe);
+    //matches = matches.split("\n");
+    //console.log(matches, typeof (matches));
+    //if there are no matches that means there arent any subsections so it just returns the text that was gotten 
+
+    return matches == null ? [header, text] : [header, matches];
+  }
+  iterateMatches(matches, currentIndex, parent, sectionNumber, lastLevel = '0') {
+    //if we leave off at a roman numeral then 
+
+    //console.log(matches);
+
+    if (currentIndex >= matches.length) {
+      return parent;
+    }
+
+    //for (var i = currentIndex; i < matches.length; i++) {
+    // let match = fun(matches, currentIndex);
+    let match = matches[currentIndex].match(subRe);
+    let nextMatch = matches[currentIndex + 1];
+    let id, divId, text, level;
+    console.log(matches[currentIndex]);
+    if (match == null) {
+      // not a subsection
+      // what do?
+      // nothing. we shouldn't handle this case, this is either descriptive text or not..?
+      // maybe handle for single section text like 701.002.
+      id = "description";
+      text = matches[currentIndex];
+      level = '0';
+    } else {
+      id = match[1];
+      text = "(" + id + ")" + match[2];
+      level = this.findLevel(id, nextMatch);
+    }
+
+    //console.log(match);
+    // 0 should be full text?
+    // 1 is id
+    // 2 is text without subsection
+
+    if (level > lastLevel) {
+      parent = parent.lastChild;
+    } else if (level < lastLevel) {
+      if (lastLevel - level == 1) {
+        parent = parent.parentNode;
+      } else if (lastLevel - level == 2) {
+        parent = parent.parentNode.parentNode;
+      } else if (lastLevel - level == 3) {
+        parent = parent.parentNode.parentNode.parentNode;
+      }
+    }
+    if (parent == null) {
+      throw new Error("Parent is null");
+    }
+    divId = parent.getAttribute("id") + "-" + id;
+    let element = this.buildElement(id, divId, text, level);
+    parent.appendChild(element);
+    // identify subsections
+    // build subsection grouping elements
+
+    this.iterateMatches(matches, ++currentIndex, parent, sectionNumber, level);
+
+    //}
+  }
+
+  buildElement(id, divId, text, level) {
+    let sub = this.docTwo.createElement("div");
+    sub.setAttribute("id", divId);
+    sub.setAttribute("class", "level-" + level);
+    let span = this.docTwo.createElement("span");
+    span.setAttribute("class", "subsection");
+    if (id != 'description') {
+      span.innerText = '(' + id + ')';
+    }
+    let theText = this.docTwo.createTextNode(text);
+    sub.appendChild(span);
+    sub.appendChild(theText);
+    return sub;
+  }
+  findLevel(text, nextMatch) {
+    let subNumRe = /^[0-9]+/;
+    let subUpperRe = /^[A-Z]+/;
+    let subRe = /^\(([0-9a-zA-Z]+)\)(.*)/;
+    let nextId;
+    if (nextMatch != null) {
+      nextId = nextMatch.match(subRe)[1];
+    }
+    if (text.match(subNumRe)) {
+      return '0';
+    } else if (!this.isRomanNumeral(text, nextId) && !text.match(subUpperRe)) {
+      return '1';
+    } else if (text.match(subUpperRe)) {
+      return '2';
+    } else if (this.isRomanNumeral(text, nextId)) {
+      return '3';
+    }
+  }
+  isRomanNumeral(text, nextText) {
+    let romanReg = /^[ivx]+/;
+    if (nextText == null) {
+      return text.match(romanReg);
+    }
+    return text.match(romanReg) && (nextText.match(romanReg) || text.length > 1);
   }
 
   // Fetches the contents of the original ORS chapter from the Oregon Legislature web site.
@@ -41,6 +228,10 @@ class OrsChapter {
       // Tell the parser to look for html
       this.doc = parser.parseFromString(html, "text/html");
       this.loaded = true;
+      if (!this.formatted) {
+        this.parse();
+        this.injectAnchors();
+      }
       return this.doc;
     });
   }
@@ -127,12 +318,10 @@ class OrsChapter {
     if (null == startNode) {
       throw new Error("NODE_NOT_FOUND_ERROR: (#" + startId + ")");
     }
-    console.log(startNode);
     var endNode = this.doc.getElementById(endId);
     if (null == startNode) {
       throw new Error("NODE_NOT_FOUND_ERROR: (#" + endId + ")");
     }
-    console.log(endNode);
     return this.clone(startNode, endNode);
   }
 
@@ -141,9 +330,7 @@ class OrsChapter {
     let range = document.createRange();
     range.setStartBefore(startNode);
     range.setEndBefore(endNode);
-    console.log(range);
     var contents = range.cloneContents();
-    console.log(contents);
 
     // Find all span elements within range
     var spans = contents.querySelectorAll("span");
