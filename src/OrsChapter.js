@@ -85,16 +85,75 @@ class OrsChapter {
     }
 
 
+
+
+
     /**
      * 
      * @param {String} id 
      * @returns DOMNode
      */
-    getSections(ids) {
-        ids = ids.map((id) => ["#section",id].join("-"));
-        console.log("Ids to be searched for:",ids);
-        return this.docTwo.querySelectorAll(ids.join(","));
+    querySelectorAll(references) {
+
+        let nodes = [];
+        console.log("references length is: ",references);
+
+        for (let i = 0; i < references.length; i++) {
+            let reference = references[i];
+            let chapter, section, subsections;
+
+            [chapter,section,subsections] = OrsChapter.parseReference(reference);
+            console.log(chapter,section,subsections);
+            let ids = subsections.length ? subsections.map((sub) => [parseInt(section), sub].join("-")) : [parseInt(section)];
+
+            ids = ids.map((id) => ["#section", id].join("-"));
+            console.log(ids);
+            let nodeList = this.docTwo.querySelectorAll(ids.join(","));
+            for(const node of nodeList.values()) {
+                nodes.push(node);
+            }
+            console.log(nodes);
+        }
+
+        return nodes;
     }
+
+
+    static extractRange(node, start, end) {
+
+        // check node.children
+        // match (1)(a)(A)(i) etc.
+    }
+
+
+
+
+
+    static parseReference(reference) {
+
+        let chapter, section, subsections;
+        let start, end;
+        [start, end] = reference.split("-");
+
+        let split = start.match(/([0-9a-zA-Z]+)/g);
+
+
+        chapter = split.shift();
+        section = split.shift();
+
+        // Parse a range of subsections.
+        // Parse a comma-delimitted series of subsections.
+        //this.references = reference.split(",");
+        subsections = split.length > 0 ? [split.join("-")] : [];
+
+        return [chapter, section, subsections];
+    }
+
+
+
+
+
+
 
 
     
@@ -204,8 +263,6 @@ class OrsChapter {
         // build subsection grouping elements
 
         this.iterateMatches(matches, ++currentIndex, parent, sectionNumber, level);
-
-        //}
     }
 
     buildElement(id, divId, text, level) {
