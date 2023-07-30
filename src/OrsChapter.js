@@ -20,6 +20,8 @@ class OrsChapter {
     // Boolean indicating if the chapter's XML document has been loaded.
     loaded = false;
 
+    initialized = false;
+
     // Boolean indicating if the chapter's XML document has been modified.
     injected = false;
 
@@ -40,6 +42,7 @@ class OrsChapter {
 
     init() {
 
+        if(this.initialized) return;
         //this regex will be used to split and make the looking for array /([0-9a-zA-Z]+)/g
         //const wordDoc = this.doc.getElementsByClassName("WordSection1")[0].innerText;
         this.docTwo = new Document();
@@ -68,13 +71,33 @@ class OrsChapter {
             wordSection.appendChild(section);
         }
         this.docTwo.appendChild(wordSection);
+        this.initialized = true;
     }
 
-    getSection(id) {
-        //parse the id get section number
-        return this.docTwo.getElementById("section-" + id);
-    } // section-17-1-a
 
+    /**
+     * 
+     * @param {String} id 
+     * @returns DOMNode
+     */
+    getSection(id) {
+        return this.docTwo.getElementById("section-" + id);
+    }
+
+
+    /**
+     * 
+     * @param {String} id 
+     * @returns DOMNode
+     */
+    getSections(ids) {
+        ids = ids.map((id) => ["#section",id].join("-"));
+        console.log("Ids to be searched for:",ids);
+        return this.docTwo.querySelectorAll(ids.join(","));
+    }
+
+
+    
     // there are exceptions!!!
     // such as (5)(a).
     // it will find the 5, and put subsection level to 0.
@@ -393,7 +416,7 @@ class OrsChapter {
                 element.style = null;
             }
         }
-        console.log(contents);
+        // console.log(contents);
         return contents;
     }
 

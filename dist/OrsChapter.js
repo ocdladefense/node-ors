@@ -15,6 +15,7 @@ class OrsChapter {
 
   // Boolean indicating if the chapter's XML document has been loaded.
   loaded = false;
+  initialized = false;
 
   // Boolean indicating if the chapter's XML document has been modified.
   injected = false;
@@ -30,6 +31,7 @@ class OrsChapter {
     return serializer.serializeToString(subset);
   }
   init() {
+    if (this.initialized) return;
     //this regex will be used to split and make the looking for array /([0-9a-zA-Z]+)/g
     //const wordDoc = this.doc.getElementsByClassName("WordSection1")[0].innerText;
     this.docTwo = new Document();
@@ -46,7 +48,6 @@ class OrsChapter {
       section.setAttribute("id", "section-" + prop);
       //if matches are returned as just a string which means no subsections exist for that section then you just build the element with the text that is stored in matches and append it to the section
       if (typeof matches == "string") {
-        console.log("hi!");
         let element = this.buildElement("description", "section-" + prop + "-description", matches, 0);
         section.appendChild(element);
       } else {
@@ -55,11 +56,27 @@ class OrsChapter {
       wordSection.appendChild(section);
     }
     this.docTwo.appendChild(wordSection);
-    console.log(this.docTwo);
+    this.initialized = true;
   }
+
+  /**
+   * 
+   * @param {String} id 
+   * @returns DOMNode
+   */
   getSection(id) {
-    //parse the id get section number
     return this.docTwo.getElementById("section-" + id);
+  }
+
+  /**
+   * 
+   * @param {String} id 
+   * @returns DOMNode
+   */
+  getSections(ids) {
+    ids = ids.map(id => ["#section", id].join("-"));
+    console.log("Ids to be searched for:", ids);
+    return this.docTwo.querySelectorAll(ids.join(","));
   }
 
   // there are exceptions!!!
@@ -74,8 +91,6 @@ class OrsChapter {
   retrievePTags(section) {
     let text = "";
     let pTags = section.children;
-    //let header = "";
-
     let fn = function (match, p1, offset, original) {
       let duo = match.split(')(');
       return duo.join(")\n(");
@@ -95,23 +110,8 @@ class OrsChapter {
       childText = childText.trim().replaceAll('\n', ' ');
       text += childText + '\n';
     }
-
-    //may need to actually retrieve the p tags and process each p tag with the regex
-    //let matches = text.match(gSubRe);
-    //let matches = text.replaceAll(/(^\([1-9a-zA-Z]+\)|(?<=\))\([1-9a-zA-Z]+\))/gm, fn);
     let matches = text.replaceAll(/(^\([0-9a-zA-Z]+\)\([0-9a-zA-Z]+\))/gm, fn);
-    /*
-    let matches = text.replaceAll(splitSubRe, fn);
-    while (matches.match(splitSubRe)) {
-        matches = matches.replaceAll(splitSubRe, fn);
-    }*/
     matches = matches.match(gSubRe);
-
-    //matches = matches.match(gSubRe);
-    //matches = matches.split("\n");
-    //console.log(matches, typeof (matches));
-    //if there are no matches that means there arent any subsections so it just returns the text that was gotten 
-
     return matches == null ? [header, text] : [header, matches];
   }
   iterateMatches(matches, currentIndex, parent, sectionNumber, lastLevel = '0') {
@@ -128,7 +128,6 @@ class OrsChapter {
     let match = matches[currentIndex].match(subRe);
     let nextMatch = matches[currentIndex + 1];
     let id, divId, text, level;
-    console.log(matches[currentIndex]);
     if (match == null) {
       // not a subsection
       // what do?
@@ -331,10 +330,7 @@ class OrsChapter {
     range.setStartBefore(startNode);
     range.setEndBefore(endNode);
     var contents = range.cloneContents();
-
-    // Find all span elements within range
     var spans = contents.querySelectorAll("span");
-
     // remove styling from each span
     for (var elements in spans) {
       let element = spans[elements];
@@ -342,6 +338,7 @@ class OrsChapter {
         element.style = null;
       }
     }
+    // console.log(contents);
     return contents;
   }
 
