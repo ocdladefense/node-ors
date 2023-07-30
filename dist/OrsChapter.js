@@ -57,6 +57,7 @@ class OrsChapter {
     }
     this.docTwo.appendChild(wordSection);
     this.initialized = true;
+    console.log(this.docTwo);
   }
 
   /**
@@ -69,47 +70,85 @@ class OrsChapter {
   }
 
   /**
-   * 
-   * @param {String} id 
-   * @returns DOMNode
-   */
+  * 
+  * @param {String} id 
+  * @returns DOMNode
+  */
   querySelectorAll(references) {
     let nodes = [];
     console.log("references length is: ", references);
     for (let i = 0; i < references.length; i++) {
       let reference = references[i];
-      let chapter, section, subsections;
-      [chapter, section, subsections] = OrsChapter.parseReference(reference);
-      console.log(chapter, section, subsections);
-      let ids = subsections.length ? subsections.map(sub => [parseInt(section), sub].join("-")) : [parseInt(section)];
-      ids = ids.map(id => ["#section", id].join("-"));
+      let chapter, section, subsection;
+      let rangeStart, rangeEnd;
+      [rangeStart, rangeEnd] = reference.split("-");
+      console.log("Ranges", rangeStart, rangeEnd);
+      [chapter, section, subsection] = OrsChapter.parseReference(rangeStart);
+      console.log(chapter, section, subsection);
+      let ids = subsection ? [parseInt(section), subsection].join("-") : parseInt(section);
+      ids = "#section-" + ids;
       console.log(ids);
-      let nodeList = this.docTwo.querySelectorAll(ids.join(","));
-      for (const node of nodeList.values()) {
-        nodes.push(node);
+      let node = this.docTwo.querySelector(ids);
+
+      // If the selector specifies a range of subsections retrieve only those.
+      if (rangeEnd) {
+        console.log("RANGE DETECTED!");
+        node = node.parentNode.cloneNode(true);
+        node = OrsChapter.extractRange(node, rangeStart, rangeEnd);
       }
+      nodes.push(node);
       console.log(nodes);
     }
     return nodes;
   }
-  static extractRange(node, start, end) {
-
+  static extractRange(node, startRef, endRef) {
+    console.log(node, startRef, endRef);
     // check node.children
     // match (1)(a)(A)(i) etc.
+
+    let start = OrsChapter.parseSubsections(startRef);
+    let end = OrsChapter.parseSubsections(endRef);
+    let remove = [];
+    let regEx, regStart, regEnd;
+    regStart = start.pop();
+    regEnd = end.pop();
+    regEx = new RegExp("[" + regStart + "-" + regEnd + "]");
+    let children = node.children;
+    for (var i = 0; i < children.length; i++) {
+      let child = children[i];
+      let id = child.getAttribute("id");
+      if (!id) continue;
+      let parts = id.split("-");
+      let compare = parts.pop();
+      console.log("Comparing ", compare, regEx);
+      if (!compare.match(regEx)) {
+        console.log("match not found");
+        remove.push(child);
+      } else {
+        console.log("match found");
+      }
+    }
+    for (var n of remove) {
+      node.removeChild(n);
+    }
+    return node;
+  }
+  static parseSubsections(reference) {
+    let subs = reference.match(/(?<=\()([0-9a-zA-Z]+)(?=\))/g);
+    console.log(subs);
+    return subs;
   }
   static parseReference(reference) {
-    let chapter, section, subsections;
-    let start, end;
-    [start, end] = reference.split("-");
-    let split = start.match(/([0-9a-zA-Z]+)/g);
-    chapter = split.shift();
-    section = split.shift();
+    let chapter, section, subsection;
+    let parts = reference.match(/([0-9a-zA-Z]+)/g);
+    chapter = parts.shift();
+    section = parts.shift();
 
     // Parse a range of subsections.
     // Parse a comma-delimitted series of subsections.
     //this.references = reference.split(",");
-    subsections = split.length > 0 ? [split.join("-")] : [];
-    return [chapter, section, subsections];
+    subsection = parts.length > 0 ? parts.join("-") : null;
+    return [chapter, section, subsection];
   }
 
   // there are exceptions!!!
@@ -151,7 +190,10 @@ class OrsChapter {
     //if we leave off at a roman numeral then 
 
     //console.log(matches);
-
+    console.log(sectionNumber);
+    if (sectionNumber == 555) {
+      console.log(matches);
+    }
     if (currentIndex >= matches.length) {
       return parent;
     }
@@ -169,6 +211,7 @@ class OrsChapter {
       id = "description";
       text = matches[currentIndex];
       level = '0';
+      return;
     } else {
       id = match[1];
       text = "(" + id + ")" + match[2];
@@ -192,6 +235,8 @@ class OrsChapter {
       }
     }
     if (parent == null) {
+      console.log(matches, sectionNumber);
+      return;
       throw new Error("Parent is null");
     }
     divId = parent.getAttribute("id") + "-" + id;
