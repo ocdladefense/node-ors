@@ -2,6 +2,8 @@ export { OrsChapter };
 const gSubRe = /^\(([0-9a-zA-Z]+)\)(.*)/gm;
 const subRe = /^\(([0-9a-zA-Z]+)\)(.*)/;
 class OrsChapter {
+  static cache = {};
+
   // Class variables
   chapterNum = null;
 
@@ -23,6 +25,19 @@ class OrsChapter {
   constructor(chapterNum) {
     this.chapterNum = chapterNum;
   }
+  static async fromCache(chapter, resp) {
+    if (OrsChapter.cache[chapter]) {
+      return OrsChapter.cache[chapter];
+    }
+    let ch = new OrsChapter(chapter);
+    let p = new Promise(async (resolve, reject) => {
+      await ch.load(resp);
+      ch.init();
+      resolve(ch);
+    });
+    OrsChapter.cache[chapter] = p;
+    return p;
+  }
 
   // Outputs the document as an HTML string
   toString() {
@@ -31,9 +46,6 @@ class OrsChapter {
     return serializer.serializeToString(subset);
   }
   init() {
-    if (this.initialized) return;
-    //this regex will be used to split and make the looking for array /([0-9a-zA-Z]+)/g
-    //const wordDoc = this.doc.getElementsByClassName("WordSection1")[0].innerText;
     this.docTwo = new Document();
     let wordSection = this.docTwo.createElement("div");
     wordSection.setAttribute("class", "WordSection1");
@@ -56,8 +68,32 @@ class OrsChapter {
       wordSection.appendChild(section);
     }
     this.docTwo.appendChild(wordSection);
-    this.initialized = true;
     console.log(this.docTwo);
+  }
+
+  // Fetches the contents of the original ORS chapter from the Oregon Legislature web site.
+  // Transforms it in to a well-formed HTML document.
+  async load(resp) {
+    console.log("CALLING LOAD");
+    if (this.loaded) {
+      console.log("LOAD ALREADY COMPLETED");
+      return Promise.resolve(this.doc);
+    }
+    return resp.arrayBuffer().then(function (buffer) {
+      const decoder = new TextDecoder("iso-8859-1");
+      return decoder.decode(buffer);
+    }).then(html => {
+      const parser = new DOMParser();
+
+      // Tell the parser to look for html
+      this.doc = parser.parseFromString(html, "text/html");
+      if (!this.formatted) {
+        this.parse();
+        this.injectAnchors();
+      }
+      this.loaded = true;
+      return this.doc;
+    });
   }
 
   /**
@@ -190,7 +226,7 @@ class OrsChapter {
     //if we leave off at a roman numeral then 
 
     //console.log(matches);
-    console.log(sectionNumber);
+    // console.log(sectionNumber);
     if (sectionNumber == 555) {
       console.log(matches);
     }
@@ -285,29 +321,6 @@ class OrsChapter {
       return text.match(romanReg);
     }
     return text.match(romanReg) && (nextText.match(romanReg) || text.length > 1);
-  }
-
-  // Fetches the contents of the original ORS chapter from the Oregon Legislature web site.
-  // Transforms it in to a well-formed HTML document.
-  async load(resp) {
-    if (this.loaded) {
-      return Promise.resolve(this.doc);
-    }
-    return resp.arrayBuffer().then(function (buffer) {
-      const decoder = new TextDecoder("iso-8859-1");
-      return decoder.decode(buffer);
-    }).then(html => {
-      const parser = new DOMParser();
-
-      // Tell the parser to look for html
-      this.doc = parser.parseFromString(html, "text/html");
-      this.loaded = true;
-      if (!this.formatted) {
-        this.parse();
-        this.injectAnchors();
-      }
-      return this.doc;
-    });
   }
   parse() {
     // Createa nodeList of all the <b> elements in the body
