@@ -159,6 +159,7 @@ class OrsChapter {
             ids = "#section-" + ids;
             console.log(ids);
             let node = this.docTwo.querySelector(ids);
+            if(null == node) return null;
 
             // If the selector specifies a range of subsections retrieve only those.
             if (rangeEnd) {
