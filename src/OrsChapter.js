@@ -4,7 +4,6 @@ const gSubRe = /^\(([0-9a-zA-Z]+)\)(.*)/gm;
 const subRe = /^\(([0-9a-zA-Z]+)\)(.*)/;
 
 class OrsChapter {
-
     static cache = {};
 
     // Class variables
@@ -30,63 +29,61 @@ class OrsChapter {
 
     doneBuilding = false;
 
-
     constructor(chapterNum) {
         this.chapterNum = chapterNum;
     }
 
-
     static async fromCache(chapter, resp) {
-
         if (OrsChapter.cache[chapter]) {
             return OrsChapter.cache[chapter];
         }
-        
+
         let ch = new OrsChapter(chapter);
-        
-        let p = new Promise(async(resolve,reject) => {
+
+        let p = new Promise(async (resolve, reject) => {
             await ch.load(resp);
             ch.init();
             resolve(ch);
         });
-        
-        OrsChapter.cache[chapter] = p;   
 
+        OrsChapter.cache[chapter] = p;
 
         return p;
     }
 
-
     // Outputs the document as an HTML string
     toString() {
         const serializer = new XMLSerializer();
-        const subset = this.doc.querySelector(".WordSection1");
+        const subset = this.doc.querySelector('.WordSection1');
         return serializer.serializeToString(subset);
     }
 
     init() {
-
         this.docTwo = new Document();
-        let wordSection = this.docTwo.createElement("div");
-        wordSection.setAttribute("class", "WordSection1");
+        let wordSection = this.docTwo.createElement('div');
+        wordSection.setAttribute('class', 'WordSection1');
 
         for (var prop in this.sectionTitles) {
             // console.log(prop);
-            let startId = "section-" + parseInt(prop);
+            let startId = 'section-' + parseInt(prop);
             let endId = this.getNextSectionId(startId);
             let header, matches;
             let clonedSection = this.cloneFromIds(startId, endId);
             [header, matches] = this.retrievePTags(clonedSection);
 
-            const section = this.docTwo.createElement("div");
+            const section = this.docTwo.createElement('div');
 
-            section.setAttribute("id", "section-" + prop);
+            section.setAttribute('id', 'section-' + prop);
             //if matches are returned as just a string which means no subsections exist for that section then you just build the element with the text that is stored in matches and append it to the section
-            if (typeof (matches) == "string") {
-                let element = this.buildElement("description", "section-" + prop + "-description", matches, 0);
+            if (typeof matches == 'string') {
+                let element = this.buildElement(
+                    'description',
+                    'section-' + prop + '-description',
+                    matches,
+                    0
+                );
                 section.appendChild(element);
-            }
-            else {
+            } else {
                 this.iterateMatches(matches, 0, section, prop);
             }
             wordSection.appendChild(section);
@@ -95,26 +92,27 @@ class OrsChapter {
         console.log(this.docTwo);
     }
 
-
     // Fetches the contents of the original ORS chapter from the Oregon Legislature web site.
     // Transforms it in to a well-formed HTML document.
     async load(resp) {
-        console.log("CALLING LOAD");
-        if (this.loaded) { console.log("LOAD ALREADY COMPLETED"); return Promise.resolve(this.doc); }
+        console.log('CALLING LOAD');
+        if (this.loaded) {
+            console.log('LOAD ALREADY COMPLETED');
+            return Promise.resolve(this.doc);
+        }
 
-
-        return resp.arrayBuffer()
+        return resp
+            .arrayBuffer()
             .then(function (buffer) {
-                const decoder = new TextDecoder("iso-8859-1");
+                const decoder = new TextDecoder('iso-8859-1');
                 return decoder.decode(buffer);
             })
-            .then((html) => {
-
+            .then(html => {
                 const parser = new DOMParser();
 
                 // Tell the parser to look for html
-                this.doc = parser.parseFromString(html, "text/html");
-                
+                this.doc = parser.parseFromString(html, 'text/html');
+
                 if (!this.formatted) {
                     this.parse();
                     this.injectAnchors();
@@ -125,45 +123,65 @@ class OrsChapter {
             });
     }
 
+    static fromResponse(resp, chapterNum) {
+        return resp
+            .arrayBuffer()
+            .then(function (buffer) {
+                const decoder = new TextDecoder('iso-8859-1');
+                return decoder.decode(buffer);
+            })
+            .then(html => {
+                const parser = new DOMParser();
+
+                let chapter = new OrsChapter(chapterNum);
+                // Tell the parser to look for html
+                chapter.doc = parser.parseFromString(html, 'text/html');
+
+                chapter.parse();
+                chapter.injectAnchors();
+
+                chapter.loaded = true;
+                return chapter;
+            });
+    }
 
     /**
-     * 
-     * @param {String} id 
+     *
+     * @param {String} id
      * @returns DOMNode
      */
     getSection(id) {
-        return this.docTwo.getElementById("section-" + id);
+        return this.docTwo.getElementById('section-' + id);
     }
 
-
-
-
-
     /**
-   * 
-   * @param {String} id 
-   * @returns DOMNode
-   */
+     *
+     * @param {String} id
+     * @returns DOMNode
+     */
     querySelectorAll(references) {
         let nodes = [];
-        console.log("references length is: ", references);
+        console.log('references length is: ', references);
         for (let i = 0; i < references.length; i++) {
             let reference = references[i];
             let chapter, section, subsection;
             let rangeStart, rangeEnd;
-            [rangeStart, rangeEnd] = reference.split("-");
-            console.log("Ranges", rangeStart, rangeEnd);
-            [chapter, section, subsection] = OrsChapter.parseReference(rangeStart);
+            [rangeStart, rangeEnd] = reference.split('-');
+            console.log('Ranges', rangeStart, rangeEnd);
+            [chapter, section, subsection] =
+                OrsChapter.parseReference(rangeStart);
             console.log(chapter, section, subsection);
-            let ids = subsection ? [parseInt(section), subsection].join("-") : parseInt(section);
-            ids = "#section-" + ids;
+            let ids = subsection
+                ? [parseInt(section), subsection].join('-')
+                : parseInt(section);
+            ids = '#section-' + ids;
             console.log(ids);
             let node = this.docTwo.querySelector(ids);
-            if(null == node) return null;
+            if (null == node) return null;
 
             // If the selector specifies a range of subsections retrieve only those.
             if (rangeEnd) {
-                console.log("RANGE DETECTED!");
+                console.log('RANGE DETECTED!');
                 node = node.parentNode.cloneNode(true);
                 node = OrsChapter.extractRange(node, rangeStart, rangeEnd);
             }
@@ -173,7 +191,6 @@ class OrsChapter {
         }
         return nodes;
     }
-
 
     static extractRange(node, startRef, endRef) {
         console.log(node, startRef, endRef);
@@ -187,24 +204,23 @@ class OrsChapter {
 
         regStart = start.pop();
         regEnd = end.pop();
-        regEx = new RegExp("[" + regStart + "-" + regEnd + "]");
+        regEx = new RegExp('[' + regStart + '-' + regEnd + ']');
 
         let children = node.children;
         for (var i = 0; i < children.length; i++) {
             let child = children[i];
-            let id = child.getAttribute("id");
+            let id = child.getAttribute('id');
             if (!id) continue;
-            let parts = id.split("-");
+            let parts = id.split('-');
             let compare = parts.pop();
-            console.log("Comparing ", compare, regEx);
+            console.log('Comparing ', compare, regEx);
             if (!compare.match(regEx)) {
-                console.log("match not found");
+                console.log('match not found');
                 remove.push(child);
             } else {
-                console.log("match found");
+                console.log('match found');
             }
         }
-
 
         for (var n of remove) {
             node.removeChild(n);
@@ -213,18 +229,13 @@ class OrsChapter {
         return node;
     }
 
-
-
     static parseSubsections(reference) {
-
         let subs = reference.match(/(?<=\()([0-9a-zA-Z]+)(?=\))/g);
 
         console.log(subs);
 
         return subs;
     }
-
-
 
     static parseReference(reference) {
         let chapter, section, subsection;
@@ -235,17 +246,10 @@ class OrsChapter {
         // Parse a range of subsections.
         // Parse a comma-delimitted series of subsections.
         //this.references = reference.split(",");
-        subsection = parts.length > 0 ? parts.join("-") : null;
+        subsection = parts.length > 0 ? parts.join('-') : null;
         return [chapter, section, subsection];
     }
 
-
-
-
-
-
-
-    
     // there are exceptions!!!
     // such as (5)(a).
     // it will find the 5, and put subsection level to 0.
@@ -256,12 +260,12 @@ class OrsChapter {
     // so it breaks. Hurray!
 
     retrievePTags(section) {
-        let text = "";
+        let text = '';
         let pTags = section.children;
 
         let fn = function (match, p1, offset, original) {
             let duo = match.split(')(');
-            return duo.join(")\n(");
+            return duo.join(')\n(');
         };
 
         let header = pTags[0].querySelector('b');
@@ -270,13 +274,13 @@ class OrsChapter {
 
         for (var index in pTags) {
             let child = pTags[index];
-            let childText = "";
+            let childText = '';
 
             if (child != null) {
                 childText = child.innerText;
             }
 
-            if (childText == null || childText == "") {
+            if (childText == null || childText == '') {
                 continue;
             }
 
@@ -284,16 +288,24 @@ class OrsChapter {
             text += childText + '\n';
         }
 
-
-        let matches = text.replaceAll(/(^\([0-9a-zA-Z]+\)\([0-9a-zA-Z]+\))/gm, fn);
+        let matches = text.replaceAll(
+            /(^\([0-9a-zA-Z]+\)\([0-9a-zA-Z]+\))/gm,
+            fn
+        );
 
         matches = matches.match(gSubRe);
 
         return matches == null ? [header, text] : [header, matches];
     }
 
-    iterateMatches(matches, currentIndex, parent, sectionNumber, lastLevel = '0') {
-        //if we leave off at a roman numeral then 
+    iterateMatches(
+        matches,
+        currentIndex,
+        parent,
+        sectionNumber,
+        lastLevel = '0'
+    ) {
+        //if we leave off at a roman numeral then
 
         //console.log(matches);
         // console.log(sectionNumber);
@@ -314,13 +326,13 @@ class OrsChapter {
             // what do?
             // nothing. we shouldn't handle this case, this is either descriptive text or not..?
             // maybe handle for single section text like 701.002.
-            id = "description";
+            id = 'description';
             text = matches[currentIndex];
             level = '0';
             return;
         } else {
             id = match[1];
-            text = "(" + id + ")" + match[2];
+            text = '(' + id + ')' + match[2];
             level = this.findLevel(id, nextMatch);
         }
 
@@ -341,26 +353,32 @@ class OrsChapter {
             }
         }
         if (parent == null) {
+            console.warn('Parent is null');
             console.log(matches, sectionNumber);
             return;
-            throw new Error("Parent is null");
         }
-        divId = parent.getAttribute("id") + "-" + id;
+        divId = parent.getAttribute('id') + '-' + id;
         let element = this.buildElement(id, divId, text, level);
         parent.appendChild(element);
         // identify subsections
         // build subsection grouping elements
 
-        this.iterateMatches(matches, ++currentIndex, parent, sectionNumber, level);
+        this.iterateMatches(
+            matches,
+            ++currentIndex,
+            parent,
+            sectionNumber,
+            level
+        );
     }
 
     buildElement(id, divId, text, level) {
-        let sub = this.docTwo.createElement("div");
-        sub.setAttribute("id", divId);
-        sub.setAttribute("class", "level-" + level);
+        let sub = this.docTwo.createElement('div');
+        sub.setAttribute('id', divId);
+        sub.setAttribute('class', 'level-' + level);
 
-        let span = this.docTwo.createElement("span");
-        span.setAttribute("class", "subsection");
+        let span = this.docTwo.createElement('span');
+        span.setAttribute('class', 'subsection');
 
         if (id != 'description') {
             span.innerText = '(' + id + ')';
@@ -387,7 +405,10 @@ class OrsChapter {
 
         if (text.match(subNumRe)) {
             return '0';
-        } else if (!this.isRomanNumeral(text, nextId) && !text.match(subUpperRe)) {
+        } else if (
+            !this.isRomanNumeral(text, nextId) &&
+            !text.match(subUpperRe)
+        ) {
             return '1';
         } else if (text.match(subUpperRe)) {
             return '2';
@@ -401,34 +422,32 @@ class OrsChapter {
         if (nextText == null) {
             return text.match(romanReg);
         }
-        return (text.match(romanReg) && (nextText.match(romanReg) || text.length > 1));
+        return (
+            text.match(romanReg) &&
+            (nextText.match(romanReg) || text.length > 1)
+        );
     }
 
-
-
-
-
-
-
     parse() {
-
         // Createa nodeList of all the <b> elements in the body
-        let headings = this.doc.querySelectorAll("b");
+        let headings = this.doc.querySelectorAll('b');
 
         for (var i = 0; i < headings.length; i++) {
             let boldParent = headings[i];
             var trimmed = headings[i].textContent.trim();
-            if (trimmed.indexOf("Note") === 0) continue;
-            let strings = trimmed.split("\n");
+            if (trimmed.indexOf('Note') === 0) continue;
+            let strings = trimmed.split('\n');
             let chapter, section, key, val;
 
             // If array has only one element,
             // Then we know this doesn't follow the traditional statute pattern.
             if (strings.length === 1) {
                 key = strings[0];
-                val = boldParent.nextSibling ? boldParent.nextSibling.textContent : "";
-
-            } else { // otherwise our normal case.
+                val = boldParent.nextSibling
+                    ? boldParent.nextSibling.textContent
+                    : '';
+            } else {
+                // otherwise our normal case.
                 key = strings[0];
                 val = strings[1];
 
@@ -443,15 +462,13 @@ class OrsChapter {
         }
     }
 
-
-
     // Inserts anchors as div tags in the doc.
-    // Note: this affects the underlying structure 
+    // Note: this affects the underlying structure
     //  of the XML document.
     injectAnchors() {
         for (var prop in this.sectionTitles) {
-            var headingDiv = this.doc.createElement('div');
-            headingDiv.setAttribute('id', "section-" + prop);
+            let headingDiv = this.doc.createElement('div');
+            headingDiv.setAttribute('id', 'section-' + prop);
             headingDiv.setAttribute('class', 'ocdla-heading');
             headingDiv.setAttribute('data-chapter', this.chapterNum);
             headingDiv.setAttribute('data-section', prop);
@@ -459,28 +476,27 @@ class OrsChapter {
             let target = this.sectionHeadings[prop];
             target.parentNode.insertBefore(headingDiv, target);
         }
-        var subset = this.doc.querySelector(".WordSection1");
-        var headingDiv = this.doc.createElement('div');
+        var subset = this.doc.querySelector('.WordSection1');
+        let headingDiv = this.doc.createElement('div');
         headingDiv.setAttribute('class', 'ocdla-heading');
-        headingDiv.setAttribute('id', "end");
+        headingDiv.setAttribute('id', 'end');
         subset.appendChild(headingDiv);
         this.formatted = true;
     }
-
 
     buildToc() {
         let toc = [];
 
         for (let key in this.sectionTitles) {
             let val = this.sectionTitles[key];
-            toc.push(`<li><span class="section-number">${this.chapterNum}.${key}</span><a data-action="view-section" data-section="${key}" href="#">${val}</a></li>`);
+            toc.push(
+                `<li><span class="section-number">${this.chapterNum}.${key}</span><a data-action="view-section" data-section="${key}" href="#">${val}</a></li>`
+            );
         }
 
         var joinedToc = toc.join(' ');
         return joinedToc;
     }
-
-
 
     // Highlights a selected section on the page
     highlight(section, endSection) {
@@ -494,7 +510,10 @@ class OrsChapter {
         var secondNode = this.doc.getElementById(endSection);
         console.log(secondNode);
         range.setStartBefore(firstNode);
-        range.setEnd(secondNode.parentNode, secondNode.parentNode.childNodes.length);
+        range.setEnd(
+            secondNode.parentNode,
+            secondNode.parentNode.childNodes.length
+        );
 
         console.log(range);
 
@@ -506,23 +525,20 @@ class OrsChapter {
     }
 
     cloneFromIds(startId, endId) {
-
         var startNode = this.doc.getElementById(startId);
         if (null == startNode) {
-            throw new Error("NODE_NOT_FOUND_ERROR: (#" + startId + ")");
+            throw new Error('NODE_NOT_FOUND_ERROR: (#' + startId + ')');
         }
         var endNode = this.doc.getElementById(endId);
         if (null == startNode) {
-            throw new Error("NODE_NOT_FOUND_ERROR: (#" + endId + ")");
+            throw new Error('NODE_NOT_FOUND_ERROR: (#' + endId + ')');
         }
 
         return this.clone(startNode, endNode);
     }
 
-
     // Clones the contents inside a range.
     clone(startNode, endNode) {
-
         let range = document.createRange();
 
         range.setStartBefore(startNode);
@@ -530,7 +546,7 @@ class OrsChapter {
 
         var contents = range.cloneContents();
 
-        var spans = contents.querySelectorAll("span");
+        var spans = contents.querySelectorAll('span');
         // remove styling from each span
         for (var elements in spans) {
             let element = spans[elements];
@@ -542,26 +558,23 @@ class OrsChapter {
         return contents;
     }
 
-
-    // Given a valid section number, 
+    // Given a valid section number,
     // returns the next section in this ORS chapter.
     // Used for building ranges.
     getNextSectionId(sectionNum) {
-        var headings = this.doc.querySelectorAll(".ocdla-heading");
+        var headings = this.doc.querySelectorAll('.ocdla-heading');
         var section = this.doc.getElementById(sectionNum);
 
         if (null == section) {
-            throw new Error("NODE_NOT_FOUND_ERROR: Could not locate " + sectionNum);
+            throw new Error(
+                'NODE_NOT_FOUND_ERROR: Could not locate ' + sectionNum
+            );
         }
         for (let i = 0; i < headings.length; i++) {
             if (headings.item(i) == section) {
                 let nextSection = headings.item(i + 1);
-                return nextSection.getAttribute("id");
+                return nextSection.getAttribute('id');
             }
         }
-
     }
-
-
-
 }
