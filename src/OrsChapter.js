@@ -145,8 +145,8 @@ export default class OrsChapter {
                 ? [parseInt(section), subsection].join('-')
                 : parseInt(section);
             ids = '#section-' + ids;
-            console.log(ids);
-            let node = this.docTwo.querySelector(ids);
+            // console.log(ids);
+            let node = this.doc.querySelector(ids);
             if (null == node) return null;
 
             // If the selector specifies a range of subsections retrieve only those.
@@ -157,13 +157,13 @@ export default class OrsChapter {
             }
 
             nodes.push(node);
-            console.log(nodes);
+            // console.log(nodes);
         }
         return nodes;
     }
 
     static extractRange(node, startRef, endRef) {
-        console.log(node, startRef, endRef);
+        // console.log(node, startRef, endRef);
         // check node.children
         // match (1)(a)(A)(i) etc.
 
@@ -280,7 +280,7 @@ export default class OrsChapter {
         //console.log(matches);
         // console.log(sectionNumber);
         if (sectionNumber == 555) {
-            console.log(matches);
+            // console.log(matches);
         }
         if (currentIndex >= matches.length) {
             return parent;
@@ -323,8 +323,7 @@ export default class OrsChapter {
             }
         }
         if (parent == null) {
-            console.warn('Parent is null');
-            console.log(matches, sectionNumber);
+            console.warn('Parent is null', matches, sectionNumber);
             return;
         }
         divId = parent.getAttribute('id') + '-' + id;
