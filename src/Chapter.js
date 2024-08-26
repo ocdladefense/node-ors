@@ -74,7 +74,11 @@ export default class Chapter {
             anchor.setAttribute('href', '#section-' + sectionNumber);
             anchor.appendChild(
                 doc.createTextNode(
-                    ch.chapterNum + '.' + sectionNumber + ' - ' + sectionTitle
+                    ch.chapterNum +
+                        '.' +
+                        sectionNumber.toString().padStart(3, '0') +
+                        ' - ' +
+                        sectionTitle
                 )
             );
 
