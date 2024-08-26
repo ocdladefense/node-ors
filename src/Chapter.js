@@ -5,7 +5,7 @@ const subRe = /^\(([0-9a-zA-Z]+)\)(.*)/;
 
 // Fetches the contents of the original ORS chapter from the Oregon Legislature web site.
 // Transforms it in to a well-formed HTML document.
-export default class OrsChapter {
+export default class Chapter {
     // The chapter number.
     chapterNum = null;
 
@@ -31,7 +31,7 @@ export default class OrsChapter {
     // Use the anchors in the unstructured chapter to build a structured chapter
     // where each section and subsection(s) are grouped and wrapped in the appropriate node hierarchy.
     static toStructuredChapter(chapter) {
-        let ch = new OrsChapter(chapter.chapterNum);
+        let ch = new Chapter(chapter.chapterNum);
         let doc = ch.doc;
         ch.chapterTitle = chapter.chapterTitle;
         ch.sectionTitles = chapter.sectionTitles;
@@ -50,7 +50,8 @@ export default class OrsChapter {
             let clonedSection = chapter.cloneFromIds(startId, endId);
             let [header, matches] = chapter.retrievePTags(clonedSection);
 
-            // If matches are returned as just a string which means no subsections exist for that section then you just build the element with the text that is stored in matches and append it to the section
+            // If matches is a string, there are no subsections,
+            // so we just build the element with the text that is stored in matches and append it to the section
             if (typeof matches == 'string') {
                 let element = OrsOutline.buildSection(
                     doc,
@@ -80,7 +81,7 @@ export default class OrsChapter {
             .then(html => {
                 const parser = new DOMParser();
 
-                let chapter = new OrsChapter(chapterNum);
+                let chapter = new Chapter(chapterNum);
                 // Tell the parser to look for html
                 chapter.doc = parser.parseFromString(html, 'text/html');
 
@@ -138,8 +139,7 @@ export default class OrsChapter {
             let rangeStart, rangeEnd;
             [rangeStart, rangeEnd] = reference.split('-');
             console.log('Ranges', rangeStart, rangeEnd);
-            [chapter, section, subsection] =
-                OrsChapter.parseReference(rangeStart);
+            [chapter, section, subsection] = Chapter.parseReference(rangeStart);
             console.log(chapter, section, subsection);
             let ids = subsection
                 ? [parseInt(section), subsection].join('-')
@@ -153,7 +153,7 @@ export default class OrsChapter {
             if (rangeEnd) {
                 console.log('RANGE DETECTED!');
                 node = node.parentNode.cloneNode(true);
-                node = OrsChapter.extractRange(node, rangeStart, rangeEnd);
+                node = Chapter.extractRange(node, rangeStart, rangeEnd);
             }
 
             nodes.push(node);
@@ -167,8 +167,8 @@ export default class OrsChapter {
         // check node.children
         // match (1)(a)(A)(i) etc.
 
-        let start = OrsChapter.parseSubsections(startRef);
-        let end = OrsChapter.parseSubsections(endRef);
+        let start = Chapter.parseSubsections(startRef);
+        let end = Chapter.parseSubsections(endRef);
         let remove = [];
         let regEx, regStart, regEnd;
 
@@ -361,32 +361,6 @@ export default class OrsChapter {
 
         var joinedToc = toc.join(' ');
         return joinedToc;
-    }
-
-    // Highlights a selected section on the page
-    highlight(section, endSection) {
-        console.log(this.chapterNum);
-        console.log(section);
-        console.log(endSection);
-        let range = this.doc.createRange();
-
-        var firstNode = this.doc.getElementById(section);
-        console.log(firstNode);
-        var secondNode = this.doc.getElementById(endSection);
-        console.log(secondNode);
-        range.setStartBefore(firstNode);
-        range.setEnd(
-            secondNode.parentNode,
-            secondNode.parentNode.childNodes.length
-        );
-
-        console.log(range);
-
-        var newParent = this.doc.createElement('div');
-        newParent.setAttribute('style', 'background-color:yellow;');
-
-        var contents = range.extractContents();
-        console.log(contents);
     }
 
     cloneFromIds(startId, endId) {
