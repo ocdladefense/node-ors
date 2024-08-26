@@ -55,6 +55,7 @@ export default class Chapter {
             // If matches is a string, there are no subsections,
             // so we just build the element with the text that is stored in matches and append it to the section
             if (typeof matches == 'string') {
+                // console.log(matches);
                 let element = OrsOutline.buildSection(
                     doc,
                     'description',
@@ -78,7 +79,7 @@ export default class Chapter {
             );
 
             // Display a section heading.
-            heading.setAttribute('style', 'font-weight: bold;');
+            heading.setAttribute('class', 'section-heading');
             heading.appendChild(anchor);
 
             wordSection.appendChild(heading);
