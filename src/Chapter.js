@@ -97,7 +97,7 @@ export default class Chapter {
 
     // Inserts anchors as <div> tags in the doc.
     // Note: this affects the underlying structure
-    //  of the XML document.
+    // of the XML document.
     injectAnchors() {
         for (var prop in this.sectionTitles) {
             let headingDiv = this.doc.createElement('div');
