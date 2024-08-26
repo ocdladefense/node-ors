@@ -33,19 +33,21 @@ export default class Chapter {
     static toStructuredChapter(chapter) {
         let ch = new Chapter(chapter.chapterNum);
         let doc = ch.doc;
+
         ch.chapterTitle = chapter.chapterTitle;
         ch.sectionTitles = chapter.sectionTitles;
 
         let wordSection = doc.createElement('div');
         wordSection.setAttribute('class', 'WordSection1');
 
-        for (var prop in chapter.sectionTitles) {
+        for (let sectionNumber in chapter.sectionTitles) {
+            let sectionTitle = chapter.sectionTitles[sectionNumber];
             // Create a new section element.
             const section = doc.createElement('div');
-            section.setAttribute('id', 'section-' + prop);
+            section.setAttribute('id', 'section-' + sectionNumber);
 
             // console.log(prop);
-            let startId = 'section-' + parseInt(prop);
+            let startId = 'section-' + parseInt(sectionNumber);
             let endId = chapter.getNextSectionId(startId);
             let clonedSection = chapter.cloneFromIds(startId, endId);
             let [header, matches] = chapter.retrievePTags(clonedSection);
@@ -56,14 +58,30 @@ export default class Chapter {
                 let element = OrsOutline.buildSection(
                     doc,
                     'description',
-                    'section-' + prop + '-description',
+                    'section-' + sectionNumber + '-description',
                     matches,
                     0
                 );
                 section.appendChild(element);
             } else {
-                chapter.iterateMatches(matches, 0, section, prop);
+                chapter.iterateMatches(matches, 0, section, sectionNumber);
             }
+            let heading = doc.createElement('h2');
+            let anchor = doc.createElement('a');
+
+            // Lets us link to this section.
+            anchor.setAttribute('href', '#section-' + sectionNumber);
+            anchor.appendChild(
+                doc.createTextNode(
+                    ch.chapterNum + '.' + sectionNumber + ' - ' + sectionTitle
+                )
+            );
+
+            // Display a section heading.
+            heading.setAttribute('style', 'font-weight: bold;');
+            heading.appendChild(anchor);
+
+            wordSection.appendChild(heading);
             wordSection.appendChild(section);
         }
         doc.appendChild(wordSection);

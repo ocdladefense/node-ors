@@ -1,9 +1,9 @@
 /**
- * @class OrsOutline
+ * @class Outline
  * @description This class is used to create an outline of the ORS chapter.
  */
 
-export default class OrsOutline {
+export default class Outline {
     /**
      * In an ORS chapter, the section titles are bolded.
      * This method retrieves the section titles and their corresponding section numbers.
@@ -60,13 +60,13 @@ export default class OrsOutline {
         if (text.match(subNumRe)) {
             return '0';
         } else if (
-            !OrsOutline.isRomanNumeral(text, nextId) &&
+            !Outline.isRomanNumeral(text, nextId) &&
             !text.match(subUpperRe)
         ) {
             return '1';
         } else if (text.match(subUpperRe)) {
             return '2';
-        } else if (OrsOutline.isRomanNumeral(text, nextId)) {
+        } else if (Outline.isRomanNumeral(text, nextId)) {
             return '3';
         }
     }
