@@ -1,4 +1,5 @@
 import OrsOutline from './Outline.js';
+import Parser from './Parser.js';
 
 const gSubRe = /^\(([0-9a-zA-Z]+)\)(.*)/gm;
 const subRe = /^\(([0-9a-zA-Z]+)\)(.*)/;
@@ -463,6 +464,55 @@ export default class Chapter {
 
     // Outputs the document as an HTML string
     toString() {
+        let xml = this;
+
+        let work = [
+            {
+                explanation:
+                    "Find all Oregon Laws (*not ORS) references with the pattern like '2019 c. 123 § 1'",
+                patterns: [
+                    /(?<year>\d{4})\s*c\.(?<chapter>\d+)\s+[§sS]+(?<section>\d+,*\s?)+/g
+                ],
+                replacer: function (groups) {
+                    return `!OREGON LAWS ${groups.year}!`;
+                }
+            },
+            {
+                patterns: [
+                    /ORS\s+(?<chapter>\w+)\.(?<section>\d+)(?:\s?\((?<subsection>[0-9a-zA-Z]{1,3})\))*/g,
+                    /(?<!ORS\s+\d*)(?<chapter>\w+)\.(?<section>\d+)(?:\s?\((?<subsection>[0-9a-zA-Z]{1,3})\))*/g
+                ],
+                replacer: function (groups) {
+                    let subsection = groups.subsection
+                        ? `(${groups.subsection})`
+                        : '';
+
+                    return `<a href="/chapter/${groups.chapter}#section-${groups.section}" style="color:blue;" data-action="show-ors" data-chapter="${groups.chapter}" data-section="${groups.section}" data-subsection="${subsection}">ORS ${groups.chapter}.${groups.section}${subsection}</a>`;
+                }
+            }
+        ];
+
+        let transform = true;
+        if (!transform) return xml.toString();
+        for (let node of this.getAllTextNodes(xml.doc.documentElement)) {
+            let parser,
+                frag,
+                html = node.data;
+
+            // As the main goal here is to insert links, there should be no need to process links again.
+            if (node.parentNode.nodeName == 'a') {
+                continue;
+            }
+
+            for (let job of work) {
+                parser = new Parser(job.patterns);
+                parser.replaceWith(job.replacer);
+                html = parser.parse(html);
+            }
+
+            frag = Parser.createDocumentFragment(html);
+            node.parentNode.replaceChild(frag, node);
+        }
         const serializer = new XMLSerializer();
         const subset = this.doc.querySelector('.WordSection1');
 
