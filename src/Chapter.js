@@ -148,6 +148,23 @@ export default class Chapter {
         return this.doc.getElementById('section-' + id);
     }
 
+    getAllTextNodes(node) {
+        let textNodes = [];
+
+        function recurse(node) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                textNodes.push(node);
+            } else if (node.childNodes) {
+                for (let i = 0; i < node.childNodes.length; i++) {
+                    recurse(node.childNodes[i]);
+                }
+            }
+        }
+
+        recurse(node);
+        return textNodes;
+    }
+
     /**
      *
      * @param {String} id
@@ -155,7 +172,11 @@ export default class Chapter {
      */
     querySelectorAll(references) {
         let nodes = [];
-        console.log('references length is: ', references);
+
+        if (!Array.isArray(references)) {
+            return this.doc.querySelectorAll(references);
+        }
+        console.log('References length is: ', references);
         for (let i = 0; i < references.length; i++) {
             let reference = references[i];
             let chapter, section, subsection;

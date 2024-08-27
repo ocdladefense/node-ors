@@ -91,12 +91,12 @@ export default class Outline {
         span.setAttribute('class', 'subsection');
 
         if (id !== 'description') {
-            // span.innerText = '(' + id + ')';
+            span.innerText = '(' + id + ')';
         }
 
         let theText = doc.createTextNode(text);
 
-        sub.appendChild(span);
+        // sub.appendChild(span);
         sub.appendChild(theText);
 
         return sub;
