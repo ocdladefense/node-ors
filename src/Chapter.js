@@ -1,3 +1,4 @@
+import DomDocument from './DomDocument.js';
 import OrsOutline from './Outline.js';
 import Parser from './Parser.js';
 
@@ -39,18 +40,78 @@ export default class Chapter {
         const parser = new DOMParser();
 
         let chapter = new Chapter(chapterNum);
-        // Tell the parser to look for html
-        chapter.doc = parser.parseFromString(html, "text/html");
+        let title = "Dynamic ORS Document: Chapter " + chapterNum;
+        // Tell the parser to look for html.
+        let _doc = parser.parseFromString(html, "text/html");
+        let contentNode = _doc.querySelector(".WordSection1");
 
-        let [sectionTitles, sectionHeadings] = OrsOutline.retrieveSectionTitles(
-          chapter.doc
-        );
+        let doc = Chapter.newDomDocument(title, contentNode);
+
+        let [sectionTitles, sectionHeadings] = OrsOutline.retrieveSectionTitles(doc);
         chapter.sectionTitles = sectionTitles;
         chapter.sectionHeadings = sectionHeadings;
+        chapter.doc = doc;
         chapter.injectAnchors();
+
+        let myDoc = new DomDocument(doc);
+        let sections = doc.querySelectorAll(".ors-anchor, .ors-end-of-chapter");
+
+        for(let i = 0; i < sections.length -1; i++) {
+          let start = sections[i];
+          let end = sections[i + 1];
+
+          let range = myDoc.getRangeBetweenSections(start, end);
+          let container = doc.createElement("div");
+          container.setAttribute("id", "section-" + sections[i].getAttribute("data-section"));
+          range.surroundContents(container);
+        }
 
         return chapter;
       });
+  }
+
+
+  /**
+   * Create a new DOM document using the given title and content node.
+   * This method facilitates the creation of a new Document object, assuming
+   * that the user has already extracted a content node from another document.
+   * 
+   * @TODO move to new DomDocument class.
+   */
+  static newDomDocument(title, contentNode) {
+
+        let doc = new Document();
+        let root = doc.createElement("html");
+        let _title = doc.createElement("title");
+        _title.append(title);
+        let head = doc.createElement("head");
+        head.appendChild(_title);
+        let body = doc.createElement("body");
+        doc.appendChild(root);
+        root.appendChild(head);
+        root.appendChild(body);
+        let content = doc.importNode(contentNode, true);
+        let endOfSectionsMarker = document.createElement("div");
+        endOfSectionsMarker.setAttribute("class", "ors-end-of-chapter");
+        content.appendChild(endOfSectionsMarker);
+        body.appendChild(content);
+
+        return doc;
+  }
+
+  // Inserts anchors as <div> tags in the doc.
+  // Note: this affects the underlying structure
+  // of the XML document.
+  injectAnchors() {
+    for (var prop in this.sectionTitles) {
+      let headingDiv = this.doc.createElement("div");
+      headingDiv.setAttribute("class", "ors-anchor");
+      headingDiv.setAttribute("data-chapter", this.chapterNum);
+      headingDiv.setAttribute("data-section", prop);
+
+      let target = this.sectionHeadings[prop];
+      target.parentNode.parentNode.insertBefore(headingDiv, target.parentNode);
+    }
   }
 
   // Convert one unstructured chapter into a structured chapter.
@@ -187,27 +248,6 @@ export default class Chapter {
     // build subsection grouping elements
 
     this.iterateMatches(matches, ++currentIndex, parent, sectionNumber, level);
-  }
-
-  // Inserts anchors as <div> tags in the doc.
-  // Note: this affects the underlying structure
-  // of the XML document.
-  injectAnchors() {
-    for (var prop in this.sectionTitles) {
-      let headingDiv = this.doc.createElement("div");
-      headingDiv.setAttribute("id", "section-" + prop);
-      headingDiv.setAttribute("class", "ocdla-heading");
-      headingDiv.setAttribute("data-chapter", this.chapterNum);
-      headingDiv.setAttribute("data-section", prop);
-
-      let target = this.sectionHeadings[prop];
-      target.parentNode.insertBefore(headingDiv, target);
-    }
-    var subset = this.doc.querySelector(".WordSection1");
-    let headingDiv = this.doc.createElement("div");
-    headingDiv.setAttribute("class", "ocdla-heading");
-    headingDiv.setAttribute("id", "end");
-    subset.appendChild(headingDiv);
   }
 
   /**
@@ -483,8 +523,13 @@ export default class Chapter {
       },
     ];
 
-    let transform = true;
-    if (!transform) return xml.toString();
+    let transform = false;
+    if (!transform) {
+      const serializer = new XMLSerializer();
+      // const subset = this.doc.querySelector(".WordSection1");
+
+      return serializer.serializeToString(this.doc);
+    }
     for (let node of this.getAllTextNodes(xml.doc.documentElement)) {
       let parser,
         frag,
