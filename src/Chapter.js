@@ -47,7 +47,8 @@ export default class Chapter {
 
         let doc = Chapter.newDomDocument(title, contentNode);
 
-        let [sectionTitles, sectionHeadings] = OrsOutline.retrieveSectionTitles(doc);
+        let [sectionTitles, sectionHeadings] =
+          OrsOutline.retrieveSectionTitles(doc);
         chapter.sectionTitles = sectionTitles;
         chapter.sectionHeadings = sectionHeadings;
         chapter.doc = doc;
@@ -56,13 +57,16 @@ export default class Chapter {
         let myDoc = new DomDocument(doc);
         let sections = doc.querySelectorAll(".ors-anchor, .ors-end-of-chapter");
 
-        for(let i = 0; i < sections.length -1; i++) {
+        for (let i = 0; i < sections.length - 1; i++) {
           let start = sections[i];
           let end = sections[i + 1];
 
           let range = myDoc.getRangeBetweenSections(start, end);
           let container = doc.createElement("div");
-          container.setAttribute("id", "section-" + sections[i].getAttribute("data-section"));
+          container.setAttribute(
+            "id",
+            "section-" + sections[i].getAttribute("data-section")
+          );
           range.surroundContents(container);
         }
 
@@ -70,33 +74,49 @@ export default class Chapter {
       });
   }
 
+  /**
+   *
+   * @param {String} id
+   * @returns DOMNode
+   */
+  getSection(id) {
+    return this.doc.getElementById("section-" + id);
+  }
 
+  getSections(references) {
+    references = Array.isArray(references) ? references : [references];
+    references = references.map((ref) => Parser.parseReference(ref));
+
+    let selectors = references.map((ref) => "#section-" + this.sectionNumber);
+
+    // Currently there is an issue because our source document has all kinds of nasty <html> tags in it.
+    return [this.doc.querySelector(selectors[0])];
+  }
   /**
    * Create a new DOM document using the given title and content node.
    * This method facilitates the creation of a new Document object, assuming
    * that the user has already extracted a content node from another document.
-   * 
+   *
    * @TODO move to new DomDocument class.
    */
   static newDomDocument(title, contentNode) {
+    let doc = new Document();
+    let root = doc.createElement("html");
+    let _title = doc.createElement("title");
+    _title.append(title);
+    let head = doc.createElement("head");
+    head.appendChild(_title);
+    let body = doc.createElement("body");
+    doc.appendChild(root);
+    root.appendChild(head);
+    root.appendChild(body);
+    let content = doc.importNode(contentNode, true);
+    let endOfSectionsMarker = document.createElement("div");
+    endOfSectionsMarker.setAttribute("class", "ors-end-of-chapter");
+    content.appendChild(endOfSectionsMarker);
+    body.appendChild(content);
 
-        let doc = new Document();
-        let root = doc.createElement("html");
-        let _title = doc.createElement("title");
-        _title.append(title);
-        let head = doc.createElement("head");
-        head.appendChild(_title);
-        let body = doc.createElement("body");
-        doc.appendChild(root);
-        root.appendChild(head);
-        root.appendChild(body);
-        let content = doc.importNode(contentNode, true);
-        let endOfSectionsMarker = document.createElement("div");
-        endOfSectionsMarker.setAttribute("class", "ors-end-of-chapter");
-        content.appendChild(endOfSectionsMarker);
-        body.appendChild(content);
-
-        return doc;
+    return doc;
   }
 
   // Inserts anchors as <div> tags in the doc.
@@ -250,15 +270,6 @@ export default class Chapter {
     this.iterateMatches(matches, ++currentIndex, parent, sectionNumber, level);
   }
 
-  /**
-   *
-   * @param {String} id
-   * @returns DOMNode
-   */
-  getSection(id) {
-    return this.doc.getElementById("section-" + id);
-  }
-
   getAllTextNodes(node) {
     let textNodes = [];
 
@@ -361,19 +372,6 @@ export default class Chapter {
     console.log("parseSubsections()", subs);
 
     return subs;
-  }
-
-  static parseReference(reference) {
-    let chapter, section, subsection;
-    let parts = reference.match(/([0-9a-zA-Z]+)/g);
-    chapter = parts.shift();
-    section = parts.shift();
-
-    // Parse a range of subsections.
-    // Parse a comma-delimitted series of subsections.
-    //this.references = reference.split(",");
-    subsection = parts.length > 0 ? parts.join("-") : null;
-    return [chapter, section, subsection];
   }
 
   // there are exceptions!!!

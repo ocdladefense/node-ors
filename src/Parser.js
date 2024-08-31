@@ -6,6 +6,20 @@
  * let linked = Parser.replaceAll(text);
  */
 const Parser = (function () {
+
+  function parseReference(reference) {
+    let chapter, section, subsection;
+    let parts = reference.match(/([0-9a-zA-Z]+)/g);
+    chapter = parts.shift();
+    section = parts.shift();
+
+    // Parse a range of subsections.
+    // Parse a comma-delimitted series of subsections.
+    //this.references = reference.split(",");
+    subsection = parts.length > 0 ? parts.join("-") : null;
+    return [chapter, section, subsection];
+  }
+
     function replacer(match, p1, p2, offset, string, g) {
         // console.log(arguments);
         let length = arguments.length - 3;
@@ -55,6 +69,7 @@ const Parser = (function () {
     }
 
     Parser.createDocumentFragment = createDocumentFragment;
+    Parser.parseReference = parseReference;
 
     return Parser;
 })();
