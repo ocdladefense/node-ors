@@ -15,13 +15,21 @@ export default class OrsNode {
     this.ownerDocument = ownerDocument || node.ownerDocument;
   }
 
+  doForEach(selectorOrNodes, callback) {
+    (Array.isArray(selectorOrNodes)
+      ? selectorOrNodes
+      : [...this.node.querySelectorAll(selector)]
+    ).forEach(callback);
+  }
+
+  
   // Trim whitespace from the beginning and end of the string.
   trimAll(selector) {
     for (let elem of this.node.querySelectorAll(selector)) {
       elem.innerHTML = elem.innerHTML.trim();
     }
   }
-  
+
   replaceInnerHTMLString(selector, str, replacement) {
     for (let elem of this.node.querySelectorAll(selector)) {
       elem.innerHTML = elem.innerHTML.replaceAll(str, replaceement);

@@ -27,11 +27,11 @@ export default class Chapter {
   document;
 
   // Parsed title of each section of this chapter.
-  sectionTitles = {};
+  sectionTitles = [];
 
   // Contains references to DOM node <b> elements.
   // Might be unused.
-  sectionHeadings = {};
+  sectionHeadings = [];
 
   #loadPhases = {};
 
@@ -67,6 +67,9 @@ export default class Chapter {
         let chapter = new Chapter(chapterNum);
         chapter.setTitle("Dynamic ORS Document: Chapter " + chapterNum);
         chapter.loadHtml(html);
+        chapter.phaseLoadSectionTitles();
+        chapter.wrapSections();
+        console.log(chapter.sectionTitles);
 
         return chapter;
         chapter.executeLoadPhases(
@@ -90,6 +93,12 @@ export default class Chapter {
       });
   }
 
+
+
+ wrapSections() {
+    this.document.wrapSections(".ors-anchor, .ors-end-of-chapter");
+ }
+
   getDocumentNode() {
     return this.document;
   }
@@ -99,6 +108,7 @@ export default class Chapter {
     // Remove leading and trailing whitespace from all <b> elements.
     // Also remove line breaks with spaces.
     this.document.trimAll("p");
+    this.document.trimAll("b");
     this.document.replaceInnerHTMLString("p", "\n", " ");
   }
 
@@ -116,61 +126,52 @@ export default class Chapter {
     this.document = OrsDocumentNode.fromHtml(html);
   }
 
-  wrapSections() {
-    let sections = this.document.querySelectorAll(
-      ".ors-anchor, .ors-end-of-chapter"
+
+
+  phaseLoadSectionTitles() {
+    this.sectionHeadings = [...this.document.querySelectorAll("b")];
+    let titles = this.sectionHeadings.map((node) =>
+      node.textContent.trim()
     );
+    let triplets = titles.map(foo);
+    
+    triplets.forEach((triplet) => {
+      let [chapter,section,title] = triplet;
+      this.sectionTitles[section.toString()] = title;
+    });
 
-    for (let i = 0; i < sections.length - 1; i++) {
-      let start = sections[i];
-      let end = sections[i + 1];
-      let oHeading, nHeading;
+    
 
-      let range = myDoc.getRangeBetweenSections(start, end);
-      let container = doc.createElement("div");
-      container.setAttribute(
-        "id",
-        "section-" + sections[i].getAttribute("data-section")
-      );
-      range.surroundContents(container);
+    // Inserts anchors as <div> tags in the doc.
+    // Note: this affects the underlying structure
+    // of the XML document.
+    triplets.forEach((triplet, index) => {
+      let [chapter, section, title] = triplet;
+      let b = this.sectionHeadings[index];
+      let anchor = this.document.createSectionAnchor(section);
+      b.parentNode.parentNode.insertBefore(anchor, b.parentNode);
+    });
 
-      oHeading = container.querySelector("b");
-      nHeading = doc.createElement("h2");
-      nHeading.appendChild(doc.createTextNode(oHeading.innerText));
-      container.prepend(nHeading);
+    function foo(label) {
+      // Ignore some labels or at least take of them.
+      // For example, some labels start with "Note" and are not part of the statutes.
+      // if (label.indexOf("Note") === 0) return [99,99,"Amended"];
 
-      oHeading.parentNode.removeChild(oHeading);
+      // Distinguish between "138.010" and the title.
+      // This helps to solve for the form: "138.010\nTitle of the statute".
+      let [enumeration, title] = label.split("\n");
+      let [chapter, section] = enumeration.split(".");
+
+      // If val wasn't set then we know this doesn't follow the regular statute pattern.,
+      // val = boldParent.nextSibling ? boldParent.nextSibling.textContent : "";
+      return [parseInt(chapter), parseInt(section), title || "Amended"];
     }
   }
 
-  phaseLoadSectionTitles() {
-    let sectionTitles, sectionHeadings;
 
-    sectionTitles = this.map("b", (node) => {
-      let boldParent = headings[i];
-      var trimmed = headings[i].textContent.trim();
-      if (trimmed.indexOf("Note") === 0) return null;
-      let strings = trimmed.split("\n");
-      let chapter, section, key, val;
 
-      // If array has only one element,
-      // Then we know this doesn't follow the regular statute pattern.
-      if (strings.length === 1) {
-        key = strings[0];
-        val = boldParent.nextSibling ? boldParent.nextSibling.textContent : "";
-      } else {
-        // otherwise our normal case.
-        key = strings[0];
-        val = strings[1];
 
-        let numbers = key.split(".");
-        chapter = numbers[0];
-        section = numbers[1];
-      }
 
-      return val;
-    });
-  }
 
   // Convert one unstructured chapter into a structured chapter.
   // Use the anchors in the unstructured chapter to build a structured chapter

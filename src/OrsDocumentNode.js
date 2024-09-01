@@ -26,7 +26,7 @@ export default class OrsDocumentNode extends OrsNode {
       span.innerText = "(" + id + ")";
     }
 
-    let theText = document.createTextNode(text);
+    let theText = this.createTextNode(text);
 
     // section.appendChild(span);
     section.appendChild(theText);
@@ -126,23 +126,49 @@ export default class OrsDocumentNode extends OrsNode {
     return [this.doc.querySelector(selectors[0])];
   }
 
-  // Inserts anchors as <div> tags in the doc.
-  // Note: this affects the underlying structure
-  // of the XML document.
-  injectSectionAnchors() {
-    for (var sectionNumber in this.sectionTitles) {
-      let headingDiv = this.createElement("div");
-      headingDiv.setAttribute("class", "ors-anchor");
-      headingDiv.setAttribute("data-chapter", 1);
-      headingDiv.setAttribute("data-section", sectionNumber);
+  createSectionAnchor(sectionNumber) {
+    let anchor = this.createElement("div");
+    anchor.setAttribute("class", "ors-anchor");
+    // anchor.setAttribute("data-chapter", 1);
+    anchor.setAttribute("data-section", sectionNumber);
 
-      let target = this.sectionHeadings[sectionNumber];
-      target.parentNode.parentNode.insertBefore(headingDiv, target.parentNode);
+    return anchor;
+  }
+
+  wrapSections(selector) {
+    let sections = this.node.querySelectorAll(
+      selector
+    );
+
+    for (let i = 0; i < sections.length - 1; i++) {
+      let start = sections[i];
+      let end = sections[i + 1];
+      let oHeading, nHeading;
+
+      let range = this.getRangeBetweenSections(start, end);
+      let container = this.createElement("div");
+      container.setAttribute(
+        "id",
+        "section-" + sections[i].getAttribute("data-section")
+      );
+      range.surroundContents(container);
+
+      oHeading = container.querySelector("b");
+      nHeading = this.createElement("h2");
+      nHeading.appendChild(this.createTextNode(oHeading.innerText));
+      container.prepend(nHeading);
+
+      oHeading.parentNode.removeChild(oHeading);
     }
   }
 
   createElement(tagName) {
     return this.node.createElement(tagName);
+  }
+
+  createTextNode(text) {
+
+    return this.node.createTextNode(text);
   }
 
   /**
@@ -228,7 +254,7 @@ export default class OrsDocumentNode extends OrsNode {
   }
 
   getRangeBetweenSections(node1, node2) {
-    let range = this.document.createRange();
+    let range = this.node.createRange();
 
     try {
       range.setStartAfter(node1);
