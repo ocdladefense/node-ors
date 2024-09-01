@@ -1,0 +1,242 @@
+import OrsNode from "./OrsNode.js";
+import OrsSectionNode from "./OrsSectionNode.js";
+import OrsNodeTypes from "./OrsNodeTypes.js";
+
+export default class OrsDocumentNode extends OrsNode {
+  #nodeType = OrsNodeTypes.ORS_CHAPTER_NODE;
+
+  #nodeName = "#orschapter";
+
+  constructor(doc) {
+    doc = doc || new Document();
+    super(doc, null);
+  }
+
+  createSection(id, divId, text, level) {
+    let document = this.node;
+
+    let section = document.createElement("div");
+    section.setAttribute("id", divId);
+    section.setAttribute("class", "level-" + level);
+
+    let span = document.createElement("span");
+    span.setAttribute("class", "subsection");
+
+    if (id !== "description") {
+      span.innerText = "(" + id + ")";
+    }
+
+    let theText = document.createTextNode(text);
+
+    // section.appendChild(span);
+    section.appendChild(theText);
+
+    return sub;
+  }
+
+  static fromHtml(html) {
+    let parser = new DOMParser();
+    let _doc = parser.parseFromString(html, "text/html");
+    let doc = new OrsDocumentNode(_doc);
+
+    // The main section of an ORS chapter is contained in a div with the class "WordChapter1".
+    let content = doc.querySelector(".WordSection1");
+    let endOfSectionsMarker = doc.createElement("div");
+    endOfSectionsMarker.setAttribute("class", "ors-end-of-chapter");
+    content.appendChild(endOfSectionsMarker);
+
+    return doc;
+  }
+
+  /**
+   * In an ORS chapter, the section titles are bolded.
+   * This method retrieves the section titles and their corresponding section numbers.
+   */
+  retrieveSectionTitles() {
+    // Createa nodeList of all the <b> elements in the body
+    let headings = this.querySelectorAll("b");
+    let titles = [],
+      elems = [];
+
+    for (var i = 0; i < headings.length; i++) {
+      let boldParent = headings[i];
+      var trimmed = headings[i].textContent.trim();
+      if (trimmed.indexOf("Note") === 0) continue;
+      let strings = trimmed.split("\n");
+      let chapter, section, key, val;
+
+      // If array has only one element,
+      // Then we know this doesn't follow the regular statute pattern.
+      if (strings.length === 1) {
+        key = strings[0];
+        val = boldParent.nextSibling ? boldParent.nextSibling.textContent : "";
+      } else {
+        // otherwise our normal case.
+        key = strings[0];
+        val = strings[1];
+
+        let numbers = key.split(".");
+        chapter = numbers[0];
+        section = numbers[1];
+      }
+
+      // Might need to change this one to remove parseInt
+      titles[parseInt(section)] = val;
+      elems[parseInt(section)] = boldParent;
+    }
+
+    return [titles, elems];
+  }
+
+  map(selector, callback) {
+    let nodes = this.querySelectorAll(selector);
+
+    return nodes.map(callback);
+  }
+
+  // Given a valid section number,
+  // returns the next section in this ORS chapter.
+  // Used for building ranges.
+  getNextSectionId(sectionNum) {
+    var section = this.node.getElementById(sectionNum);
+
+    return section.nextElementSibling;
+  }
+
+  /**
+   *
+   * @param {String} id
+   * @returns DOMNode
+   */
+  getSection(id) {
+    return this.node.getElementById("section-" + id);
+  }
+
+  getContentNode() {
+    return this.node.querySelector(".WordSection1");
+  }
+
+  getSections(references) {
+    references = Array.isArray(references) ? references : [references];
+    references = references.map((ref) => Parser.parseReference(ref));
+
+    let selectors = references.map((ref) => "#section-" + this.sectionNumber);
+
+    // Currently there is an issue because our source document has all kinds of nasty <html> tags in it.
+    return [this.doc.querySelector(selectors[0])];
+  }
+
+  // Inserts anchors as <div> tags in the doc.
+  // Note: this affects the underlying structure
+  // of the XML document.
+  injectSectionAnchors() {
+    for (var sectionNumber in this.sectionTitles) {
+      let headingDiv = this.createElement("div");
+      headingDiv.setAttribute("class", "ors-anchor");
+      headingDiv.setAttribute("data-chapter", 1);
+      headingDiv.setAttribute("data-section", sectionNumber);
+
+      let target = this.sectionHeadings[sectionNumber];
+      target.parentNode.parentNode.insertBefore(headingDiv, target.parentNode);
+    }
+  }
+
+  createElement(tagName) {
+    return this.node.createElement(tagName);
+  }
+
+  /**
+   *
+   * @param {String} id
+   * @returns DOMNode
+   */
+  queryReferenceAll(references) {
+    return [];
+  }
+  queryReference(references) {
+    let nodes = [];
+
+    if (!Array.isArray(references)) {
+      console.log("References is not an array");
+      return this.doc.querySelector(references);
+    }
+    console.log("References length is: ", references);
+    for (let i = 0; i < references.length; i++) {
+      let reference = references[i];
+      let chapter, section, subsection;
+      let rangeStart, rangeEnd;
+      [rangeStart, rangeEnd] = reference.split("-");
+      console.log("Ranges", rangeStart, rangeEnd);
+      [chapter, section, subsection] = Chapter.parseReference(rangeStart);
+      console.log(chapter, section, subsection);
+      let ids = subsection
+        ? [parseInt(section), subsection].join("-")
+        : parseInt(section);
+      ids = "#section-" + ids;
+      // console.log(ids);
+      let node = this.doc.querySelector(ids);
+      if (null == node) return null;
+
+      // If the selector specifies a range of subsections retrieve only those.
+      if (rangeEnd) {
+        console.log("RANGE DETECTED!");
+        node = node.parentNode.cloneNode(true);
+        node = Chapter.extractRange(node, rangeStart, rangeEnd);
+      }
+
+      nodes.push(node);
+      // console.log(nodes);
+    }
+    return nodes;
+  }
+
+  /**
+   * Create a new DOM document using the given title and content node.
+   * This method facilitates the creation of a new Document object, assuming
+   * that the user has already extracted a content node from another document.
+   *
+   * @TODO move to new DomDocument class.
+   */
+  static newDomDocument(title, contentNode) {
+    let doc = new Document();
+    let root = doc.createElement("html");
+    let _title = doc.createElement("title");
+    _title.append(title);
+    let head = doc.createElement("head");
+    head.appendChild(_title);
+    let body = doc.createElement("body");
+    doc.appendChild(root);
+    root.appendChild(head);
+    root.appendChild(body);
+    let content = doc.importNode(contentNode, true);
+    let endOfSectionsMarker = document.createElement("div");
+    endOfSectionsMarker.setAttribute("class", "ors-end-of-chapter");
+    content.appendChild(endOfSectionsMarker);
+    body.appendChild(content);
+
+    return doc;
+  }
+
+  createDocumentFragment(html) {
+    const parser = new DOMParser();
+    let doc = parser.parseFromString(html, "text/html");
+
+    let fragment = new DocumentFragment();
+    fragment.append(doc.documentElement);
+
+    return fragment;
+  }
+
+  getRangeBetweenSections(node1, node2) {
+    let range = this.document.createRange();
+
+    try {
+      range.setStartAfter(node1);
+      range.setEndBefore(node2);
+    } catch (e) {
+      console.error(node1, node2);
+      throw e;
+    }
+    return range;
+  }
+}

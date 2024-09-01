@@ -68,8 +68,18 @@ const Parser = (function () {
         return fragment;
     }
 
+    function parseSubsections(reference) {
+    let subs = reference.match(/(?<=\()([0-9a-zA-Z]+)(?=\))/g);
+
+    console.log("parseSubsections()", subs);
+
+    return subs;
+  }
+
+
     Parser.createDocumentFragment = createDocumentFragment;
     Parser.parseReference = parseReference;
+    Parser.parseSubsections = parseSubsections;
 
     return Parser;
 })();

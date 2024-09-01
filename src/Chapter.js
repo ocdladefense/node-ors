@@ -1,9 +1,18 @@
-import DomDocument from './DomDocument.js';
+import OrsDocumentNode from './OrsDocumentNode.js';
+import OrsSectionNode from './OrsSectionNode.js';
 import OrsOutline from './Outline.js';
 import Parser from './Parser.js';
+import ChapterLoadPhases from './OrsChapterLoadPhases.js';
+
+
+
+
 
 const gSubRe = /^\(([0-9a-zA-Z]+)\)(.*)/gm;
+
 const subRe = /^\(([0-9a-zA-Z]+)\)(.*)/;
+
+
 
 // Fetches the contents of the original ORS chapter from the Oregon Legislature web site.
 // Transforms it in to a well-formed HTML document.
@@ -15,7 +24,7 @@ export default class Chapter {
   title;
 
   // The chapter's underlying XML document.
-  doc = null;
+  document;
 
   // Parsed title of each section of this chapter.
   sectionTitles = {};
@@ -24,9 +33,27 @@ export default class Chapter {
   // Might be unused.
   sectionHeadings = {};
 
+  #loadPhases = {};
+
   constructor(chapterNum) {
     this.chapterNum = chapterNum;
-    this.doc = new Document();
+    this.orsDocumentNode = new OrsDocumentNode();
+
+    this.#loadPhases[ChapterLoadPhases.LOAD_SECTION_TITLES] =
+      this.loadSectionTitles;
+    this.#loadPhases[ChapterLoadPhases.LOAD_SECTION_TITLE_NODES] =
+      this.loadSectionTitleNodes;
+    this.#loadPhases[ChapterLoadPhases.ADD_SECTION_ANCHOR_NODES] =
+      this.addSectionAnchorNodes;
+    this.#loadPhases[ChapterLoadPhases.WRAP_SECTIONS] =
+      this.wrapSectionsWithNodes;
+    this.#loadPhases[ChapterLoadPhases.WRAP_SECTIONS_RECURSIVE] =
+      this.wrapSectionsWithNodes;
+  }
+
+
+  setTitle(title) {
+    this.title = title;
   }
 
   static fromResponse(resp, chapterNum) {
@@ -37,108 +64,119 @@ export default class Chapter {
         return decoder.decode(buffer);
       })
       .then((html) => {
-        const parser = new DOMParser();
-
         let chapter = new Chapter(chapterNum);
-        let title = "Dynamic ORS Document: Chapter " + chapterNum;
-        // Tell the parser to look for html.
-        let _doc = parser.parseFromString(html, "text/html");
-        let contentNode = _doc.querySelector(".WordSection1");
+        chapter.setTitle("Dynamic ORS Document: Chapter " + chapterNum);
+        chapter.loadHtml(html);
 
-        let doc = Chapter.newDomDocument(title, contentNode);
+        return chapter;
+        chapter.executeLoadPhases(
+          // Locate all of the document's section titles (usually in <b> tags) and store the text in an array for future use.
+          ChapterLoadPhase.LOAD_SECTION_TITLES,
 
-        let [sectionTitles, sectionHeadings] =
-          OrsOutline.retrieveSectionTitles(doc);
-        chapter.sectionTitles = sectionTitles;
-        chapter.sectionHeadings = sectionHeadings;
-        chapter.doc = doc;
-        chapter.injectAnchors();
+          // Do the same with references to the <b> elements themselves.
+          ChapterLoadPhase.LOAD_SECTION_TITLE_NODES,
 
-        let myDoc = new DomDocument(doc);
-        let sections = doc.querySelectorAll(".ors-anchor, .ors-end-of-chapter");
+          // Add anchor nodes to the document to allow for easy linking to sections.
+          ChapterLoadPhase.ADD_SECTION_ANCHOR_NODES,
 
-        for (let i = 0; i < sections.length - 1; i++) {
-          let start = sections[i];
-          let end = sections[i + 1];
+          // Wrap each section in a container node.
+          ChapterLoadPhase.WRAP_SECTIONS_WITH_NODES
 
-          let range = myDoc.getRangeBetweenSections(start, end);
-          let container = doc.createElement("div");
-          container.setAttribute(
-            "id",
-            "section-" + sections[i].getAttribute("data-section")
-          );
-          range.surroundContents(container);
-        }
+          // Do the same for subsections, and their own subsections.
+          // ChapterLoadPhase.WRAP_SECTIONS_WITH_NODES_RECURSIVE
+        );
 
         return chapter;
       });
   }
 
-  /**
-   *
-   * @param {String} id
-   * @returns DOMNode
-   */
-  getSection(id) {
-    return this.doc.getElementById("section-" + id);
+  getDocumentNode() {
+    return this.document;
   }
 
-  getSections(references) {
-    references = Array.isArray(references) ? references : [references];
-    references = references.map((ref) => Parser.parseReference(ref));
-
-    let selectors = references.map((ref) => "#section-" + this.sectionNumber);
-
-    // Currently there is an issue because our source document has all kinds of nasty <html> tags in it.
-    return [this.doc.querySelector(selectors[0])];
-  }
-  /**
-   * Create a new DOM document using the given title and content node.
-   * This method facilitates the creation of a new Document object, assuming
-   * that the user has already extracted a content node from another document.
-   *
-   * @TODO move to new DomDocument class.
-   */
-  static newDomDocument(title, contentNode) {
-    let doc = new Document();
-    let root = doc.createElement("html");
-    let _title = doc.createElement("title");
-    _title.append(title);
-    let head = doc.createElement("head");
-    head.appendChild(_title);
-    let body = doc.createElement("body");
-    doc.appendChild(root);
-    root.appendChild(head);
-    root.appendChild(body);
-    let content = doc.importNode(contentNode, true);
-    let endOfSectionsMarker = document.createElement("div");
-    endOfSectionsMarker.setAttribute("class", "ors-end-of-chapter");
-    content.appendChild(endOfSectionsMarker);
-    body.appendChild(content);
-
-    return doc;
+  processWhitespace() {
+    // ORS titles are stuck in <b> elements that contain unecessary leading and trailing whitespace.
+    // Remove leading and trailing whitespace from all <b> elements.
+    // Also remove line breaks with spaces.
+    this.document.trimAll("p");
+    this.document.replaceInnerHTMLString("p", "\n", " ");
   }
 
-  // Inserts anchors as <div> tags in the doc.
-  // Note: this affects the underlying structure
-  // of the XML document.
-  injectAnchors() {
-    for (var prop in this.sectionTitles) {
-      let headingDiv = this.doc.createElement("div");
-      headingDiv.setAttribute("class", "ors-anchor");
-      headingDiv.setAttribute("data-chapter", this.chapterNum);
-      headingDiv.setAttribute("data-section", prop);
+  getContent() {
+    return this.document.querySelector(".WordSection1");
+  }
 
-      let target = this.sectionHeadings[prop];
-      target.parentNode.parentNode.insertBefore(headingDiv, target.parentNode);
+  executeLoadPhases(...phases) {
+    for (let phase of phases) {
+      // this.#loadPhases[phase].call(this);
     }
+  }
+
+  loadHtml(html) {
+    this.document = OrsDocumentNode.fromHtml(html);
+  }
+
+  wrapSections() {
+    let sections = this.document.querySelectorAll(
+      ".ors-anchor, .ors-end-of-chapter"
+    );
+
+    for (let i = 0; i < sections.length - 1; i++) {
+      let start = sections[i];
+      let end = sections[i + 1];
+      let oHeading, nHeading;
+
+      let range = myDoc.getRangeBetweenSections(start, end);
+      let container = doc.createElement("div");
+      container.setAttribute(
+        "id",
+        "section-" + sections[i].getAttribute("data-section")
+      );
+      range.surroundContents(container);
+
+      oHeading = container.querySelector("b");
+      nHeading = doc.createElement("h2");
+      nHeading.appendChild(doc.createTextNode(oHeading.innerText));
+      container.prepend(nHeading);
+
+      oHeading.parentNode.removeChild(oHeading);
+    }
+  }
+
+  phaseLoadSectionTitles() {
+    let sectionTitles, sectionHeadings;
+
+    sectionTitles = this.map("b", (node) => {
+      let boldParent = headings[i];
+      var trimmed = headings[i].textContent.trim();
+      if (trimmed.indexOf("Note") === 0) return null;
+      let strings = trimmed.split("\n");
+      let chapter, section, key, val;
+
+      // If array has only one element,
+      // Then we know this doesn't follow the regular statute pattern.
+      if (strings.length === 1) {
+        key = strings[0];
+        val = boldParent.nextSibling ? boldParent.nextSibling.textContent : "";
+      } else {
+        // otherwise our normal case.
+        key = strings[0];
+        val = strings[1];
+
+        let numbers = key.split(".");
+        chapter = numbers[0];
+        section = numbers[1];
+      }
+
+      return val;
+    });
   }
 
   // Convert one unstructured chapter into a structured chapter.
   // Use the anchors in the unstructured chapter to build a structured chapter
   // where each section and subsection(s) are grouped and wrapped in the appropriate node hierarchy.
   static toStructuredChapter(chapter) {
-    let ch = new Chapter(chapter.chapterNum);
+    let ch = new OregonRevisedStatutesChapter(chapter.chapterNum);
     let doc = ch.doc;
 
     ch.chapterTitle = chapter.chapterTitle;
@@ -270,72 +308,13 @@ export default class Chapter {
     this.iterateMatches(matches, ++currentIndex, parent, sectionNumber, level);
   }
 
-  getAllTextNodes(node) {
-    let textNodes = [];
-
-    function recurse(node) {
-      if (node.nodeType === Node.TEXT_NODE) {
-        textNodes.push(node);
-      } else if (node.childNodes) {
-        for (let i = 0; i < node.childNodes.length; i++) {
-          recurse(node.childNodes[i]);
-        }
-      }
-    }
-
-    recurse(node);
-    return textNodes;
-  }
-
-  /**
-   *
-   * @param {String} id
-   * @returns DOMNode
-   */
-  querySelectorAll(references) {
-    let nodes = [];
-
-    if (!Array.isArray(references)) {
-      console.log("References is not an array");
-      return this.doc.querySelector(references);
-    }
-    console.log("References length is: ", references);
-    for (let i = 0; i < references.length; i++) {
-      let reference = references[i];
-      let chapter, section, subsection;
-      let rangeStart, rangeEnd;
-      [rangeStart, rangeEnd] = reference.split("-");
-      console.log("Ranges", rangeStart, rangeEnd);
-      [chapter, section, subsection] = Chapter.parseReference(rangeStart);
-      console.log(chapter, section, subsection);
-      let ids = subsection
-        ? [parseInt(section), subsection].join("-")
-        : parseInt(section);
-      ids = "#section-" + ids;
-      // console.log(ids);
-      let node = this.doc.querySelector(ids);
-      if (null == node) return null;
-
-      // If the selector specifies a range of subsections retrieve only those.
-      if (rangeEnd) {
-        console.log("RANGE DETECTED!");
-        node = node.parentNode.cloneNode(true);
-        node = Chapter.extractRange(node, rangeStart, rangeEnd);
-      }
-
-      nodes.push(node);
-      // console.log(nodes);
-    }
-    return nodes;
-  }
-
   static extractRange(node, startRef, endRef) {
     // console.log(node, startRef, endRef);
     // check node.children
     // match (1)(a)(A)(i) etc.
 
-    let start = Chapter.parseSubsections(startRef);
-    let end = Chapter.parseSubsections(endRef);
+    let start = OregonRevisedStatutesChapter.parseSubsections(startRef);
+    let end = OregonRevisedStatutesChapter.parseSubsections(endRef);
     let remove = [];
     let regEx, regStart, regEnd;
 
@@ -364,133 +343,6 @@ export default class Chapter {
     }
 
     return node;
-  }
-
-  static parseSubsections(reference) {
-    let subs = reference.match(/(?<=\()([0-9a-zA-Z]+)(?=\))/g);
-
-    console.log("parseSubsections()", subs);
-
-    return subs;
-  }
-
-  // there are exceptions!!!
-  // such as (5)(a).
-  // it will find the 5, and put subsection level to 0.
-  // HOWEVER, we are actually supposed to be on (a).
-  // the level is supposed to be 1.
-  // the next subsection in the list is (A).
-  // this is ONLY EXPECTED when level is 1. Not when level is 0.
-  // so it breaks. Hurray!
-
-  retrievePTags(section) {
-    let text = "";
-    let pTags = section.children;
-
-    let fn = function (match, p1, offset, original) {
-      let duo = match.split(")(");
-      return duo.join(")\n(");
-    };
-
-    let header = pTags[0].querySelector("b");
-    header = pTags[0].removeChild(header);
-    header = header.innerText;
-
-    for (var index in pTags) {
-      let child = pTags[index];
-      let childText = "";
-
-      if (child != null) {
-        childText = child.innerText;
-      }
-
-      if (childText == null || childText == "") {
-        continue;
-      }
-
-      childText = childText.trim().replaceAll("\n", " ");
-      text += childText + "\n";
-    }
-
-    let matches = text.replaceAll(/(^\([0-9a-zA-Z]+\)\([0-9a-zA-Z]+\))/gm, fn);
-
-    matches = matches.match(gSubRe);
-
-    return matches === null ? [header, text] : [header, matches];
-  }
-
-  removeNodes(selector) {
-    let nodes = this.doc.querySelectorAll(selector);
-    for (var i = 0; i < nodes.length; i++) {
-      let node = nodes[i];
-      node.parentNode.removeChild(node);
-    }
-  }
-
-  buildToc() {
-    let toc = [];
-
-    for (let key in this.sectionTitles) {
-      let val = this.sectionTitles[key];
-      toc.push(
-        `<li><span class="section-number">${this.chapterNum}.${key}</span><a data-action="view-section" data-section="${key}" href="#">${val}</a></li>`
-      );
-    }
-
-    var joinedToc = toc.join(" ");
-    return joinedToc;
-  }
-
-  cloneFromIds(startId, endId) {
-    var startNode = this.doc.getElementById(startId);
-    if (null == startNode) {
-      throw new Error("NODE_NOT_FOUND_ERROR: (#" + startId + ")");
-    }
-    var endNode = this.doc.getElementById(endId);
-    if (null == startNode) {
-      throw new Error("NODE_NOT_FOUND_ERROR: (#" + endId + ")");
-    }
-
-    return this.clone(startNode, endNode);
-  }
-
-  // Clones the contents inside a range.
-  clone(startNode, endNode) {
-    let range = document.createRange();
-
-    range.setStartBefore(startNode);
-    range.setEndBefore(endNode);
-
-    var contents = range.cloneContents();
-
-    var spans = contents.querySelectorAll("span");
-    // remove styling from each span
-    for (var elements in spans) {
-      let element = spans[elements];
-      if (element.style) {
-        element.style = null;
-      }
-    }
-    // console.log(contents);
-    return contents;
-  }
-
-  // Given a valid section number,
-  // returns the next section in this ORS chapter.
-  // Used for building ranges.
-  getNextSectionId(sectionNum) {
-    var headings = this.doc.querySelectorAll(".ocdla-heading");
-    var section = this.doc.getElementById(sectionNum);
-
-    if (null == section) {
-      throw new Error("NODE_NOT_FOUND_ERROR: Could not locate " + sectionNum);
-    }
-    for (let i = 0; i < headings.length; i++) {
-      if (headings.item(i) == section) {
-        let nextSection = headings.item(i + 1);
-        return nextSection.getAttribute("id");
-      }
-    }
   }
 
   // Outputs the document as an HTML string
@@ -526,9 +378,9 @@ export default class Chapter {
       const serializer = new XMLSerializer();
       // const subset = this.doc.querySelector(".WordSection1");
 
-      return serializer.serializeToString(this.doc);
+      return serializer.serializeToString(this.getContent());
     }
-    for (let node of this.getAllTextNodes(xml.doc.documentElement)) {
+    for (let node of this.document.getAllTextNodes(xml.doc.documentElement)) {
       let parser,
         frag,
         html = node.data;
