@@ -5,20 +5,20 @@
  * let text = "ORS 123.123";
  * let linked = Parser.replaceAll(text);
  */
-const Parser = (function () {
+export const Parser = (function () {
 
-  function parseReference(reference) {
-    let chapter, section, subsection;
-    let parts = reference.match(/([0-9a-zA-Z]+)/g);
-    chapter = parts.shift();
-    section = parts.shift();
+    function parseReference(reference) {
+        let chapter, section, subsection;
+        let parts = reference.match(/([0-9a-zA-Z]+)/g);
+        chapter = parts.shift();
+        section = parts.shift();
 
-    // Parse a range of subsections.
-    // Parse a comma-delimitted series of subsections.
-    //this.references = reference.split(",");
-    subsection = parts.length > 0 ? parts.join("-") : null;
-    return [chapter, section, subsection];
-  }
+        // Parse a range of subsections.
+        // Parse a comma-delimitted series of subsections.
+        //this.references = reference.split(",");
+        subsection = parts.length > 0 ? parts.join("-") : null;
+        return [chapter, section, subsection];
+    }
 
     function replacer(match, p1, p2, offset, string, g) {
         // console.log(arguments);
@@ -58,30 +58,20 @@ const Parser = (function () {
         replacer: replacer
     };
 
-    function createDocumentFragment(html) {
-        const parser = new DOMParser();
-        let doc = parser.parseFromString(html, 'text/html');
 
-        let fragment = new DocumentFragment();
-        fragment.append(doc.documentElement);
-
-        return fragment;
-    }
 
     function parseSubsections(reference) {
-    let subs = reference.match(/(?<=\()([0-9a-zA-Z]+)(?=\))/g);
+        let subs = reference.match(/(?<=\()([0-9a-zA-Z]+)(?=\))/g);
 
-    console.log("parseSubsections()", subs);
+        console.log("parseSubsections()", subs);
 
-    return subs;
-  }
+        return subs;
+    }
 
 
-    Parser.createDocumentFragment = createDocumentFragment;
+    
     Parser.parseReference = parseReference;
     Parser.parseSubsections = parseSubsections;
 
     return Parser;
 })();
-
-export default Parser;

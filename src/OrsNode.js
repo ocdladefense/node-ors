@@ -3,6 +3,8 @@ import OrsNodeTypes from './OrsNodeTypes.js';
 
 
 
+
+
 export default class OrsNode {
   // The underlying DOM node implementation.
   node;
@@ -22,17 +24,24 @@ export default class OrsNode {
     ).forEach(callback);
   }
 
-  
+
   // Trim whitespace from the beginning and end of the string.
-  trimAll(selector) {
+  // Optionally, remove leading and trailing HTML whitespace character entities.
+  trimAll(selector, trimHtmlWhitespaceCharacterEntities = false) {
     for (let elem of this.node.querySelectorAll(selector)) {
       elem.innerHTML = elem.innerHTML.trim();
+      if(trimHtmlWhitespaceCharacterEntities) {
+        elem.innerHTML = elem.innerHTML.replace(/^(&nbsp;)+/g, "");
+        elem.innerHTML = elem.innerHTML.replace(/(&nbsp;)+$/g, "");
+      }
     }
   }
 
+
+
   replaceInnerHTMLString(selector, str, replacement) {
     for (let elem of this.node.querySelectorAll(selector)) {
-      elem.innerHTML = elem.innerHTML.replaceAll(str, replaceement);
+      elem.innerHTML = elem.innerHTML.replaceAll(str, replacement);
     }
   }
 
@@ -99,6 +108,11 @@ export default class OrsNode {
       let newNode = this.document.createTextNode(newText);
       node.parentNode.replaceChild(newNode, node);
     });
+  }
+
+
+  toString() {
+    return this.node.textContent;
   }
 }
 

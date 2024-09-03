@@ -12,27 +12,17 @@ export default class OrsDocumentNode extends OrsNode {
     super(doc, null);
   }
 
-  createSection(id, divId, text, level) {
-    let document = this.node;
 
-    let section = document.createElement("div");
-    section.setAttribute("id", divId);
-    section.setAttribute("class", "level-" + level);
 
-    let span = document.createElement("span");
-    span.setAttribute("class", "subsection");
+  createOrsSection(sectionNumber) {
 
-    if (id !== "description") {
-      span.innerText = "(" + id + ")";
-    }
+    let section = new OrsSectionNode(this.getElementById("section-" + sectionNumber, this));
+    section.setSectionNumber(sectionNumber);
 
-    let theText = this.createTextNode(text);
-
-    // section.appendChild(span);
-    section.appendChild(theText);
-
-    return sub;
+    return section;
   }
+
+  
 
   static fromHtml(html) {
     let parser = new DOMParser();
@@ -48,45 +38,7 @@ export default class OrsDocumentNode extends OrsNode {
     return doc;
   }
 
-  /**
-   * In an ORS chapter, the section titles are bolded.
-   * This method retrieves the section titles and their corresponding section numbers.
-   */
-  retrieveSectionTitles() {
-    // Createa nodeList of all the <b> elements in the body
-    let headings = this.querySelectorAll("b");
-    let titles = [],
-      elems = [];
 
-    for (var i = 0; i < headings.length; i++) {
-      let boldParent = headings[i];
-      var trimmed = headings[i].textContent.trim();
-      if (trimmed.indexOf("Note") === 0) continue;
-      let strings = trimmed.split("\n");
-      let chapter, section, key, val;
-
-      // If array has only one element,
-      // Then we know this doesn't follow the regular statute pattern.
-      if (strings.length === 1) {
-        key = strings[0];
-        val = boldParent.nextSibling ? boldParent.nextSibling.textContent : "";
-      } else {
-        // otherwise our normal case.
-        key = strings[0];
-        val = strings[1];
-
-        let numbers = key.split(".");
-        chapter = numbers[0];
-        section = numbers[1];
-      }
-
-      // Might need to change this one to remove parseInt
-      titles[parseInt(section)] = val;
-      elems[parseInt(section)] = boldParent;
-    }
-
-    return [titles, elems];
-  }
 
   map(selector, callback) {
     let nodes = this.querySelectorAll(selector);
@@ -94,11 +46,15 @@ export default class OrsDocumentNode extends OrsNode {
     return nodes.map(callback);
   }
 
+
+  getElementById(id) {
+    return this.node.getElementById(id);
+  }
   // Given a valid section number,
   // returns the next section in this ORS chapter.
   // Used for building ranges.
   getNextSectionId(sectionNum) {
-    var section = this.node.getElementById(sectionNum);
+    var section = this.getElementById(sectionNum);
 
     return section.nextElementSibling;
   }
@@ -109,7 +65,7 @@ export default class OrsDocumentNode extends OrsNode {
    * @returns DOMNode
    */
   getSection(id) {
-    return this.node.getElementById("section-" + id);
+    return this.createOrsSection(id);
   }
 
   getContentNode() {
@@ -247,12 +203,15 @@ export default class OrsDocumentNode extends OrsNode {
     const parser = new DOMParser();
     let doc = parser.parseFromString(html, "text/html");
 
-    let fragment = new DocumentFragment();
+    let fragment = this.node.createDocumentFragment();
     fragment.append(doc.documentElement);
 
     return fragment;
   }
 
+
+
+  // Used specifically after the anchor phase 
   getRangeBetweenSections(node1, node2) {
     let range = this.node.createRange();
 
@@ -263,6 +222,7 @@ export default class OrsDocumentNode extends OrsNode {
       console.error(node1, node2);
       throw e;
     }
+    
     return range;
   }
 }
