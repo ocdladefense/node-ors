@@ -18,8 +18,10 @@ export const Parser = (function () {
    */
   function parseOrsReference(ref) {
     // This finds where each section changes
-    const sectionRegex = /(\w+\.\w+(\(.+\),?-?)+)/g;
+    const sectionRegex = /(\w+\.\w+(\([a-zA-Z0-9]+\),?-?)+)/g;
     const sections = ref.match(sectionRegex);
+
+    console.log(sections);
 
     // This is our return array which will be populated with our ids
     let ids = [];
