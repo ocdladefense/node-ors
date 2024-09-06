@@ -1,3 +1,23 @@
+
+// References are ordered in the order that they are to be displayed.
+
+
+
+const OP_REFERENCE_SEPARATOR = ",";
+
+const OP_REFERENCE_RANGE = "-";
+
+const CHAR_REFERENCE_SPACE = " ";
+
+const CHAR_SUBSECTION_OPEN = "(";
+
+const CHAR_SUBSECTION_CLOSE = ")";
+
+const CHAR_CHAPTER_SECTION_SEPARATOR = ".";
+
+const CHAR_HYPHEN_SEPARATOR = "-";
+
+
 /**
  * @class Parser
  * @description Parses ORS references in text and replaces them with links.
@@ -97,6 +117,66 @@ export const Parser = (function () {
     return ids;
   }
 
+  /**
+let text = "138.5(3)(a),(4)(a)-(c)";
+Parser.parseReferences(text);
+ */
+  function parseReferences(refs) {
+    let seq = refs
+      .split(OP_REFERENCE_SEPARATOR)
+      .map((ref) => ref.split(OP_REFERENCE_RANGE));
+
+    let f = seq.map((ref) => ref.map(parseReference2));
+    return f;
+    // return matches.join(CHAR_HYPHEN_SEPARATOR);
+  }
+
+  function parseReference2(ref) {
+    let regex = /(?<=\()(\w+)(?=\))+?/g;
+    debugger;
+    return ref.match(regex);
+  }
+
+  function locate(ref1, ref2 = null, algo = ReferenceAlgorithm.INTERSECT) {
+    /*
+Step 1:
+"138.005(1),(2)-(4),(5)(a)"
+
+Step 2: Convert into a sequence based on comma.
+[138.005(1),(2)-(4),(5)(a)]
+
+Step 3: Convert ranges into array couples.
+// Reference can include a single section or a "range" of sections.
+// Sequence of references, any given reference when it is itself a array should be interpreted as indicating a "range"
+[138.005(1),[(2),(4)],(5)(a)]
+
+Step 4: Map to a RegExp, i.e., /\(((?<ref>)\w+)\)+/g;
+// An array of subsection suffixes; some suffixes still indicate a range.
+[1,[2,4],[5-a]]
+
+Step 5: Define our prefix.
+let prefix = [138,5];
+
+Step 6: Build our ids from the prefix.
+// Goal: return a list of strings that represent either individual nodes **or** ranges of nodes.
+let ids = [138-5-1,[138-5-2,138-5-4],138-5-5-a];
+
+Step 7: Convert ids into actual DOMStrings.
+// Array of DOMStrings that are the ids of the nodes we want to select.
+// A DOMString tha is itself an array should be interpreted as a range of ids.
+let actualIds = ids.map(id => // assign the prefix as well);
+
+Step 8: Return our ids as an array of DOMStrings, which may include couples.
+
+
+Step 9: Consume the IDs to retrieve DOM Nodes.
+// Last step converts a sequence of ids into a sequence of nodes.
+// Interprets any sequence that is itself an array a being a range (which is exactly what we indicating by our use of the `-` character).
+let nodes = ids.map((id) => { if(Array.isArray(id) ? this.document.getRange(...id) : document.getElementById(id)});
+
+*/
+  }
+
   function parseReference(reference) {
     let chapter, section, subsection;
     let parts = reference.match(/([0-9a-zA-Z]+)/g);
@@ -158,6 +238,8 @@ export const Parser = (function () {
 
   Parser.parseReference = parseReference;
   Parser.parseSubsections = parseSubsections;
-
+  Parser.parseOrsReference = parseOrsReference;
+  Parser.parseReferences = parseReferences;
+  window.Parser = Parser;
   return Parser;
 })();
