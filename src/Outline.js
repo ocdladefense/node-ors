@@ -26,7 +26,7 @@ const LEVEL_1_REGEX = null;
 const LEVEL_2_REGEX = "[0-9]+";
 
 // Level 2 is marked by lowercase letters and takes the form of "(a)" or "(b)".
-const LEVEL_3_REGEX = "[a-z]+";
+const LEVEL_3_REGEX = "[a-z]{1}";
 
 // Level 3 is marked by uppercase letters and takes the form of "(A)" or "(B)".
 const LEVEL_4_REGEX = "[A-Z]+";
@@ -108,17 +108,82 @@ let text = "138.5(3)(a),(4)(a)-(c)";
 Parser.parseReferences(text);
  */
 export function parseReferences(refs) {
-  return refs
+
+    let fn = function(ref) {
+        let matches = ref.match(/^\d+(\.\d+)?/);
+        return matches ? matches[0] : null; 
+    };
+
+    let foo = function(partial) {
+        let empty = SAMPLE_PATH.slice().fill(null);
+
+        if(partial.length < 1) return empty;
+        for(let i = 0; i < partial.length; i++) {
+            empty[i] = partial[i];
+        }
+
+        return empty;
+    };
+
+    let sections = refs.split(OP_REFERENCE_SEPARATOR)
+    .map((ref) => {return ref.includes(OP_REFERENCE_RANGE) ? ref.split(OP_REFERENCE_RANGE) : ref})
+    .map(ref => Array.isArray(ref) ? ref.map(ref => ref.trim()) : ref.trim())
+    .map(ref => Array.isArray(ref) ? ref.map(fn) : fn(ref))
+    .map(ref => Array.isArray(ref) ? ref.map(ref => {
+        if(null == ref) return [];
+        
+        let parts = ref.split(".");
+        
+        if(parts.length > 1) {
+            return parts.reverse();
+        } else {
+            return [null, parts[0]];
+        }
+    }) : ref.split("."))
+    .map(ref => Array.isArray(ref[0]) ? ref.map(foo) : foo(ref));
+
+    console.log("Sections are: ",sections);
+
+    sections = flatten(sections);
+
+    console.log("Sections are: ",sections);
+    
+
+    sections = merge(sections);
+
+    console.log("Sections are: ",sections);
+    let result = [];
+
+
+  let partials = refs
     .split(OP_REFERENCE_SEPARATOR)
     .map((ref) => {return ref.includes(OP_REFERENCE_RANGE) ? ref.split(OP_REFERENCE_RANGE) : ref})
+    .map(ref => Array.isArray(ref) ? ref.map(ref => ref.trim()) : ref.trim())
     .map(ref => { return Array.isArray(ref) ? ref.map(_parseReferences) : _parseReferences(ref); })
     .map((partial) => {
       return Array.isArray(partial[0]) ? partial.map(toMatrix) : toMatrix(partial);
-  });
+    })
+    .map(matrix => Array.isArray(matrix[0]) ? [matrix[0],addPaths(matrix[0],matrix[1])] : matrix);
+    partials = flatten(partials);
+    
+
+    return sections.map((elem,index) => { elem.unshift("x"); let partial = partials[index]; partial.unshift("s"); return addPaths(elem,partials[index])});
 }
 
 
+
+function flatten(arr) {
+    let result = [];
+
+    arr.forEach(elem => Array.isArray(elem[0]) ? elem.flat(0).forEach(elem => result.push(elem)) : result.push(elem));
+
+    return result;
+}
+
+
+
 function toMatrix(parts) {
+    if(parts.length < 1) return SAMPLE_PATH.slice().fill(null);
   let tmp = parts.map((part) => toPath(part));
   let matrix = tmp.reduce((acc, val) => addPaths(acc, val));
   console.log(matrix);
@@ -148,6 +213,13 @@ export function addPaths(matrix1, matrix2) {
 }
 
 
+function merge(arr) {
+    let paint = (elem,index,arr) => {
+        let previous = arr[index-1] || SAMPLE_PATH.slice().fill(null);
+        return addPaths(previous,elem);
+    };
+    return arr.map(paint).map(paint);
+}
 
 
 
@@ -159,7 +231,7 @@ export default class Outline {
 
     for (let level = (comparison ? Outline.getPosition(comparison)+1 : OUTLINE_LEVEL_2); level < OUTLINE_LEVELS.length; level++) {
       if(!OUTLINE_LEVELS[level]) continue;
-      let regex = new RegExp(`^(?<label>${OUTLINE_LEVELS[level]})`);
+      let regex = new RegExp(`^(?<label>${OUTLINE_LEVELS[level]})$`);
       let matches = str.match(regex);
       // console.log(matches);
       if (matches) {
