@@ -1,6 +1,6 @@
 import OrsNode from "./OrsNode.js";
-import Outline from "./Outline.js";
-import { REGEX_ENUMERATIVE_PAIR, REGEX_ENUMERATIVE, OUTLINE_LEVEL_UNKNOWN, OUTLINE_LEVEL_0} from "./Outline.js";
+import Outline from "../utility/Outline.js";
+import { REGEX_ENUMERATIVE_PAIR, REGEX_ENUMERATIVE, OUTLINE_LEVEL_UNKNOWN, OUTLINE_LEVEL_0} from "../utility/Outline.js";
 
 export default class OrsSectionNode extends OrsNode {
   #nodeName = "#orssection";
@@ -75,6 +75,12 @@ export default class OrsSectionNode extends OrsNode {
   }
 
 
+  toTree(branch = null) {
+    let trunk = this.node.cloneNode(false);
+
+    this.node.children.forEach();
+  }
+
   replaceWithNewNode() {
 
     // Keep the top-level section that was already inserted into the document tree.
@@ -93,7 +99,9 @@ export default class OrsSectionNode extends OrsNode {
         idParts.push(label);
       } else if (level < previousLevel) {
         idParts.pop();
-        idParts.pop();
+        for(let diff = 1; diff <= previousLevel - level; diff++) {
+          idParts.pop();
+        }
         idParts.push(label);
       } else if (level == previousLevel) {
         idParts.pop();
@@ -138,7 +146,7 @@ export default class OrsSectionNode extends OrsNode {
     };
 
     // Remove leading and trailing whitespace from the text.
-    let _paragraphs = [...this.getParagraphs()].map(p => p.innerText.trim());
+    let _paragraphs = [...this.getParagraphs()].map(p => p.textContent.trim());
 
     // Remove line breaks.
     let paragraphs = _paragraphs.map(text => text.replaceAll("\n", " ")).filter(text => text.length > 0);
@@ -148,6 +156,9 @@ export default class OrsSectionNode extends OrsNode {
 
     return tmp.split("\n");
   }
+
+
+
 
   toString() {
     return this.getText().join("\n");

@@ -110,6 +110,10 @@ export default class OrsDocumentNode extends OrsNode {
       range.surroundContents(container);
 
       oHeading = container.querySelector("b");
+      if(null == oHeading) {
+        console.warn("Unable to find heading for section: ", sections[i], container);
+        continue;
+      }
       nHeading = this.createElement("h2");
       nHeading.appendChild(this.createTextNode(oHeading.innerText));
       container.prepend(nHeading);

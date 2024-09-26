@@ -7,16 +7,6 @@ const OP_REFERENCE_SEPARATOR = ",";
 
 const OP_REFERENCE_RANGE = "-";
 
-const CHAR_REFERENCE_SPACE = " ";
-
-const CHAR_SUBSECTION_OPEN = "(";
-
-const CHAR_SUBSECTION_CLOSE = ")";
-
-const CHAR_CHAPTER_SECTION_SEPARATOR = ".";
-
-const CHAR_HYPHEN_SEPARATOR = "-";
-
 
 /**
  * @class Parser
@@ -25,7 +15,9 @@ const CHAR_HYPHEN_SEPARATOR = "-";
  * let text = "ORS 123.123";
  * let linked = Parser.replaceAll(text);
  */
-export const Parser = (function () {
+const Matcher = (function () {
+
+
   /**
    * Parses an ORS reference string and returns an array of IDs. These IDs can be used to select DOM nodes.
    *
@@ -200,10 +192,7 @@ let nodes = ids.map((id) => { if(Array.isArray(id) ? this.document.getRange(...i
     return this.replaceFn(groups);
   }
 
-  function Parser(patterns) {
-    this.patterns = patterns;
-    this.replaceFn = null;
-  }
+
 
   function replaceWith(replacer) {
     this.replaceFn = replacer;
@@ -222,10 +211,18 @@ let nodes = ids.map((id) => { if(Array.isArray(id) ? this.document.getRange(...i
     return text;
   }
 
-  Parser.prototype = {
+  
+
+  function Matcher(patterns) {
+    this.patterns = patterns;
+    this.replaceFn = null;
+  }
+
+
+  Matcher.prototype = {
     replaceWith: replaceWith,
     parse: parse,
-    replacer: replacer,
+    replacer: replacer
   };
 
   function parseSubsections(reference) {
@@ -236,10 +233,13 @@ let nodes = ids.map((id) => { if(Array.isArray(id) ? this.document.getRange(...i
     return subs;
   }
 
-  Parser.parseReference = parseReference;
-  Parser.parseSubsections = parseSubsections;
-  Parser.parseOrsReference = parseOrsReference;
-  Parser.parseReferences = parseReferences;
-  window.Parser = Parser;
-  return Parser;
+  Matcher.parseReference = parseReference;
+  Matcher.parseSubsections = parseSubsections;
+  Matcher.parseOrsReference = parseOrsReference;
+  Matcher.parseReferences = parseReferences;
+  window.Matcher = Matcher;
+  return Matcher;
 })();
+
+
+export default Matcher;

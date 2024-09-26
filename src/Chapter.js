@@ -1,5 +1,5 @@
-import OrsDocumentNode from './OrsDocumentNode.js';
-import {Parser} from './Parser.js';
+import OrsDocumentNode from './node/OrsDocumentNode.js';
+import Matcher from './utility/Matcher.js';
 import ChapterInitPhases from './ChapterInitPhases.js';
 
 
@@ -49,6 +49,29 @@ export default class Chapter {
     this.title = title;
   }
 
+
+
+  async download() {
+
+      let html = this.document.node.documentElement.outerHTML;
+      console.log("HTML is: ", html);
+      // An array consisting of a single string.
+      const blobParts = [html];
+      const blob = new Blob(blobParts, { type: "text/html" }); // the blob
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = url;
+      // the filename you want
+      a.download = "ors-chapter-" + this.chapterNum + ".html";
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+  }
+
+
   /**
    *
    * @param {Response} resp
@@ -74,13 +97,26 @@ export default class Chapter {
         chapter.loadHtml(html);
         chapter.loadSectionMetadata();
         chapter.writeSectionAnchors();
-        chapter.wrapSections();
-        chapter.processWhitespace();
-        console.log(chapter.sectionTitles);
 
-        let oldNode = chapter.document.getSection(5).replaceWithNewNode();
-        console.log(oldNode);
-        console.log(chapter.document.getSection(5));
+        
+
+        chapter.wrapSections();
+
+        
+        chapter.processWhitespace();
+        // console.log(chapter.sectionTitles);
+
+
+
+        
+        for(let sectionNumber in chapter.sectionTitles) {
+          let oldNode = chapter.document.getSection(sectionNumber).replaceWithNewNode();
+          let node = chapter.document.getSection(sectionNumber);
+          // console.log(node.toNode());
+        }
+        
+        // chapter.download();
+          
 
         return chapter;
         chapter.init(
@@ -104,6 +140,23 @@ export default class Chapter {
       });
   }
 
+
+
+  querySelectorAll(selectors) {
+
+    let document = this.getDocumentNode();
+    console.log("Selector are: ",selectors);
+
+    let sections = document.querySelectorAll(selectors);
+    console.log("Sections are: ",sections);
+    // console.log("Section toString()", section.toString());
+    // console.log("Section getText()", section.getText());
+    if(null == sections || (sections.length && sections.length == 0)) {
+      console.warn("No sections found for selectors: ", selectors);
+    }
+    // let sections = [section.toNode()];
+    return [...sections];
+  }
 
   wrapSections() {
     this.document.wrapSections(".ors-anchor, .ors-end-of-chapter");
@@ -138,28 +191,31 @@ export default class Chapter {
   }
 
   loadSectionMetadata() {
-    this.sectionHeadings = [...this.document.querySelectorAll("b")];
+    this.sectionHeadings = [...this.document.querySelectorAll("b")].filter(n => !!n.textContent && n.textContent.trim().match(/^\d+\.\d+/));
+    
     let titles = this.sectionHeadings.map((node) => node.textContent.trim());
+
     this.metadata = titles.map(fn);
+
 
     this.metadata.forEach((triplet) => {
       let [chapter, section, title] = triplet;
       this.sectionTitles[section.toString()] = title;
     });
 
-    function fn(label) {
-      // Ignore some labels or at least take of them.
+    function fn(_title) {
+      // Ignore some labels that would otherwise be considered titles but *aren't titles.
       // For example, some labels start with "Note" and are not part of the statutes.
-      // if (label.indexOf("Note") === 0) return [99,99,"Amended"];
+      // if(label.indexOf("Note") === 0) return null; //return [99,99,"Amended"];
 
       // Distinguish between "138.010" and the title.
       // This helps to solve for the form: "138.010\nTitle of the statute".
-      let [enumeration, title] = label.split("\n");
+      let [enumeration, title] = _title.split("\n");
       let [chapter, section] = enumeration.split(".");
 
       // If val wasn't set then we know this doesn't follow the regular statute pattern.
       // val = boldParent.nextSibling ? boldParent.nextSibling.textContent : "";
-      return [parseInt(chapter), parseInt(section), title || "Amended"];
+      return [parseInt(chapter), parseInt(section), title || "Amended or Repealed"];
     }
   }
 
@@ -173,10 +229,13 @@ export default class Chapter {
       let anchor = this.document.createSectionAnchor(section);
       b.parentNode.parentNode.insertBefore(anchor, b.parentNode);
     });
+
+    console.log("Anchors added to the document.");
+    console.log(this.document.node);
   }
 
   // Outputs the document as an HTML string
-  toString() {
+  __toString() {
     let xml = this;
 
     let work = [
@@ -221,12 +280,12 @@ export default class Chapter {
       }
 
       for (let job of work) {
-        parser = new Parser(job.patterns);
+        parser = new Matcher(job.patterns);
         parser.replaceWith(job.replacer);
         html = parser.parse(html);
       }
 
-      frag = Parser.createDocumentFragment(html);
+      frag = Matcher.createDocumentFragment(html);
       node.parentNode.replaceChild(frag, node);
     }
     const serializer = new XMLSerializer();
