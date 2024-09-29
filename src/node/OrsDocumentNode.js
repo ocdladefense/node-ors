@@ -215,16 +215,16 @@ export default class OrsDocumentNode extends OrsNode {
 
 
 
-  // Used specifically after the anchor phase 
-  getRangeBetweenSections(node1, node2) {
+  // Used after the anchor phase to wrap the topmost chapter sections with a div.
+  getRangeBetweenSections(node1, node2, inclusive = false) {
     let range = this.node.createRange();
-
-    try {
+    
+    if(inclusive) {
+      range.setStartBefore(node1);
+      range.setEndAfter(node2);
+    } else {
       range.setStartAfter(node1);
       range.setEndBefore(node2);
-    } catch (e) {
-      console.error(node1, node2);
-      throw e;
     }
     
     return range;

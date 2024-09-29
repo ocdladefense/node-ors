@@ -223,6 +223,8 @@ export default class Chapter {
     // Inserts anchors as <div> tags in the doc.
     // Note: this affects the underlying structure
     // of the XML document.
+    console.log("Metadata is: ", this.metadata);
+
     this.metadata.forEach((triplet, index) => {
       let [chapter, section, title] = triplet;
       let b = this.sectionHeadings[index];
@@ -232,6 +234,27 @@ export default class Chapter {
 
     console.log("Anchors added to the document.");
     console.log(this.document.node);
+  }
+
+
+  /**
+   * 
+   * @param {String} sel1
+   * @param {String} sel2 
+   */
+  getRange(matrixStart, matrixEnd) {
+
+    let document = this.getDocumentNode();
+    let sel1 = "#section-" + matrixStart.join("-");
+    // Prepare a selector that will capture the last descendent of the end section.
+    let sel2 = "[id*='section-" + matrixEnd.join("-")+"']";
+
+    let node1 = this.document.querySelector(sel1);
+    let endNodes = [...this.document.querySelectorAll(sel2)];
+    let node2 = endNodes[endNodes.length - 1];
+
+    // Inclusive is passed as true to include the start and end nodes in the range.
+    return document.getRangeBetweenSections(node1, node2, true);
   }
 
   // Outputs the document as an HTML string
