@@ -107,11 +107,22 @@ const CHAR_HYPHEN_SEPARATOR = "-";
 
 
 
-
-
+/**
+ * 
+ * @param {Matrix} matrix
+ * @returns {Matrix}
+ * @description This function will remove any trailing null values from the matrix.
+ */
+export function truncate(matrix) {
+  let result = matrix.slice();
+  while (result[result.length - 1] === null) {
+    result.pop();
+  }
+  return result;
+}
 
 export function toMatrix(parts) {
-    if(parts.length < 1) return SAMPLE_PATH.slice().fill(null);
+  if(parts.length < 1) return SAMPLE_PATH.slice().fill(null);
   let tmp = parts.map((part) => toPath(part));
   let matrix = tmp.reduce((acc, val) => addPaths(acc, val));
   // console.log(matrix);
@@ -131,9 +142,14 @@ export function toPath(value, comparison = null) {
   return matrix;
 }
 
+
+
 export function addPaths(matrix1, matrix2) {
   let result = matrix1.slice();
-  for (var i = 0; i < matrix1.length; i++) {
+  result[0] = matrix2[0];
+  const SKIP_INDICATOR_BIT = 1;
+
+  for (var i = SKIP_INDICATOR_BIT; i < matrix1.length; i++) {
     result[i] = matrix2[i] || matrix1[i];
   }
 
@@ -141,12 +157,23 @@ export function addPaths(matrix1, matrix2) {
 }
 
 
+
+
 export function merge(arr) {
+    let merged = [];
+    const STICKY_BIT_UNSET = null;
+    let previous = (() => { let tmp = SAMPLE_PATH.slice().fill(null); tmp.unshift(STICKY_BIT_UNSET); return tmp; })();
+    
+
     let paint = (elem,index,arr) => {
-        let previous = arr[index-1] || SAMPLE_PATH.slice().fill(null);
-        return addPaths(previous,elem);
+      let result = addPaths(previous,elem);
+      previous = result;
+      merged.push(result);
     };
-    return arr.map(paint).map(paint);
+
+    arr.forEach(paint);
+
+    return merged;
 }
 
 

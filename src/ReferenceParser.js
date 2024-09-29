@@ -1,4 +1,4 @@
-import {toMatrix,toPath,addPaths,merge,_parseReferences} from "./utility/Matrix.js";
+import {toMatrix,toPath,addPaths,merge,_parseReferences,truncate} from "./utility/Matrix.js";
 /**
  * @file ReferenceParser.js
  * @description This class is used to convert ORS references to matrices or DOM selectors.
@@ -105,15 +105,36 @@ const CHAR_HYPHEN_SEPARATOR = "-";
 
 
 
+export function toNodes(selectors) {
 
- export function parseReferenceV1(refString) {
+  // Group selectors if by range.
+  // Indicator bit of 1 indicates start of range; 2 indicates end of range.
+  let groups = [];
 
-  
-    let references = refString.split(",").map((ref) => ref.trim());
-    // This ensures we get a chapter and a section even if the ref attribute contains subsection elements
-    // of the form 138.001(1)(a).
-    return references[0].split(/\.|\(/).map(str => parseInt(str));
+  for(let i = 0; i < selectors.length; i++) {
+    let indicatorBit = selectors[i][0];
+
+    if("1" === indicatorBit) {
+      groups.push([selectors[i], selectors[++i]]);
+    }
+    else groups.push(selectors[0]);
   }
+}
+
+
+
+export function toSelectors(refs, type = "id", truncateNulls = true) {
+  let matrices = parseReferences(refs);
+  matrices = matrices.map(m => m.slice(1));
+  matrices = matrices.map(truncate);
+  matrices = matrices.map(m => {m.shift(); return m;});
+
+  return matrices.map(m => "section-" + m.join(CHAR_HYPHEN_SEPARATOR));
+}
+
+
+
+
 
 /**
 let text = "138.5(3)(a),(4)(a)-(c)";
@@ -122,56 +143,17 @@ parseReferences(text);
 export function parseReferences(refs) {
 
     let sections = parseChapterAndSection(refs);
+    console.log("Sections are: ",sections);
 
-    // console.log("Sections are: ",sections);
     let partials = parseSubsections(refs);
+    console.log("Partials are: ",partials);
 
-
-    // When flattening we still need a bit that stores
-    // the start and end of a range.
-    /*return sections.map((elem,index) => {
-      elem.unshift("x");
-      let partial = partials[index];
-      partial.unshift("s");
-      return addPaths(elem,partial);
-    });
-    */
     return sections.map((elem,index) => {
       let partial = partials[index];
       return addPaths(elem,partial);
     });
 }
 
-export function toSelectors(refs, type = "id", truncateNulls = true) {
-  let matrices = parseReferences(refs);
-  matrices = matrices.map(m => m.slice(1));
-
-  return matrices.map(m => "section-" + m.filter(elem => !!elem).join(CHAR_HYPHEN_SEPARATOR));
-}
-
-
-export function parseSubsections(refs) {
-  let partials = refs
-    .split(OP_REFERENCE_SEPARATOR)
-    .map((ref) => {return ref.includes(OP_REFERENCE_RANGE) ? ref.split(OP_REFERENCE_RANGE) : ref})
-    .map(ref => Array.isArray(ref) ? ref.map(ref => ref.trim()) : ref.trim())
-    .map(ref => { return Array.isArray(ref) ? ref.map(_parseReferences) : _parseReferences(ref); })
-    .map((partial) => {
-      return Array.isArray(partial[0]) ? partial.map(toMatrix) : toMatrix(partial);
-    })
-    .map(matrix => Array.isArray(matrix[0]) ? [matrix[0],addPaths(matrix[0],matrix[1])] : matrix);
-    partials = flatten(partials);
-
-    return partials;
-}
-
-export function flatten(arr) {
-    let result = [];
-
-    arr.forEach(elem => Array.isArray(elem[0]) ? elem.flat(0).forEach(elem => result.push(elem)) : result.push(elem));
-
-    return result;
-}
 
 
 /**
@@ -205,9 +187,9 @@ export function parseChapterAndSection(refs) {
         
         if(parts.length > 1) {
           return [parts[0], parseInt(parts[1]).toString()];
-            // return parts.reverse();
+          // return parts.reverse();
         } else {
-            return [null, parts[0]];
+          return [null, parts[0]];
         }
     };
 
@@ -218,10 +200,70 @@ export function parseChapterAndSection(refs) {
     .map(ref => Array.isArray(ref) ? ref.map(splitByChapterAndSection) : splitByChapterAndSection(ref))
     .map(ref => Array.isArray(ref[0]) ? ref.map(foo) : foo(ref));
 
-    // console.log("Sections are: ",sections);
+    console.log("Sections (before flatten) are: ",sections);
 
     sections = flatten(sections);
+    console.log("Sections (after flatten) are: ",sections);
+    
 
-    return merge(sections);
+    sections = merge(sections);
+
+    console.log("Sections (after merge) are: ",sections);
+
+    return sections;
 }
 
+
+export function parseSubsections(refs) {
+  let partials = refs
+    .split(OP_REFERENCE_SEPARATOR)
+    .map((ref) => {return ref.includes(OP_REFERENCE_RANGE) ? ref.split(OP_REFERENCE_RANGE) : ref})
+    .map(ref => Array.isArray(ref) ? ref.map(ref => ref.trim()) : ref.trim())
+    .map(ref => { return Array.isArray(ref) ? ref.map(_parseReferences) : _parseReferences(ref); })
+    .map((partial) => {
+      return Array.isArray(partial[0]) ? partial.map(toMatrix) : toMatrix(partial);
+    })
+    .map(matrix => Array.isArray(matrix[0]) ? [matrix[0],addPaths(matrix[0],matrix[1])] : matrix);
+    partials = flatten(partials);
+
+    return partials;
+}
+
+
+
+
+
+
+
+/**
+ * 
+ * @param {Array<Matrix>} arr 
+ * @returns Sequence<Matrix>
+ * @description This function will flatten an array of matrices into a sequence of matrices,
+ *   setting the "indicator bit" to "1" for the first element of a range and "2" for the last element.
+ *   Explicit references have an indicator bit of "0".
+ */
+export function flatten(arr) {
+    let result = [];
+
+    arr.forEach(elem => {
+      if(Array.isArray(elem[0])) {
+        let tmp = elem.map((elem,index) => { elem.unshift(index == 0 ? 1 : 2); return elem; });
+        tmp.forEach(elem => result.push(elem));
+      }
+      else {
+        elem.unshift(0);
+        result.push(elem);
+      }
+    });
+
+    return result;
+}
+
+
+export function parseReferenceV1(refString) {
+  let references = refString.split(",").map((ref) => ref.trim());
+  // This ensures we get a chapter and a section even if the ref attribute contains subsection elements
+  // of the form 138.001(1)(a).
+  return references[0].split(/\.|\(/).map(str => parseInt(str));
+}
