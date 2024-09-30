@@ -105,42 +105,16 @@ const CHAR_HYPHEN_SEPARATOR = "-";
 
 
 
-export function toNodes(selectors) {
-
-  // Group selectors if by range.
-  // Indicator bit of 1 indicates start of range; 2 indicates end of range.
-  let groups = [];
-
-  for(let i = 0; i < selectors.length; i++) {
-    let indicatorBit = selectors[i][0];
-
-    if("1" === indicatorBit) {
-      groups.push([selectors[i], selectors[++i]]);
-    }
-    else groups.push(selectors[0]);
-  }
-}
-
-
-
-export function toSelectors(refs, type = "id", truncateNulls = true) {
-  let matrices = parseReferences(refs);
-  matrices = matrices.map(m => m.slice(1));
-  matrices = matrices.map(truncate);
-  matrices = matrices.map(m => {m.shift(); return m;});
-
-  return matrices.map(m => "section-" + m.join(CHAR_HYPHEN_SEPARATOR));
-}
-
-
-
-
-
 /**
 let text = "138.5(3)(a),(4)(a)-(c)";
 parseReferences(text);
  */
-export function parseReferences(refs) {
+export class ReferenceParser {
+
+
+
+  // Convert a human-readable reference to a matrix.
+  static toMatrix(refs) {
 
     let sections = parseChapterAndSection(refs);
     console.log("Sections are: ",sections);
@@ -152,7 +126,11 @@ export function parseReferences(refs) {
       let partial = partials[index];
       return addPaths(elem,partial);
     });
+  }
 }
+
+
+
 
 
 
@@ -169,7 +147,7 @@ export function parseChapterAndSection(refs) {
         return matches ? matches[0] : null; 
     };
 
-    let foo = function(partial) {
+    let convertToMatrix = function(partial) {
         let empty = SAMPLE_PATH.slice().fill(null);
 
         if(partial.length < 1) return empty;
@@ -198,7 +176,7 @@ export function parseChapterAndSection(refs) {
     .map(ref => Array.isArray(ref) ? ref.map(ref => ref.trim()) : ref.trim())
     .map(ref => Array.isArray(ref) ? ref.map(fn) : fn(ref))
     .map(ref => Array.isArray(ref) ? ref.map(splitByChapterAndSection) : splitByChapterAndSection(ref))
-    .map(ref => Array.isArray(ref[0]) ? ref.map(foo) : foo(ref));
+    .map(ref => Array.isArray(ref[0]) ? ref.map(convertToMatrix) : convertToMatrix(ref));
 
     console.log("Sections (before flatten) are: ",sections);
 
