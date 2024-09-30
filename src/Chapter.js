@@ -1,7 +1,7 @@
 import OrsDocumentNode from './node/OrsDocumentNode.js';
 import Matcher from './utility/Matcher.js';
 import ChapterInitPhases from './ChapterInitPhases.js';
-
+import {truncate} from './utility/Matrix.js';
 
 
 // Fetches the contents of the original ORS chapter from the Oregon Legislature web site.
@@ -236,26 +236,84 @@ export default class Chapter {
     console.log(this.document.node);
   }
 
+  
+
+
+  // Convert matrixes into DOMString selectors for use in document.querySelector().
+  // For now, selectors will largely consist of IDs.
+  // For example, "section-10-1" will select the first subsection of ORS 128.010
+  //   using the selector, "#section-10-1".
+  toSelectors(matrixes, prefix="section", type = "id", truncateNulls = true) {
+
+    // Remove unused (null) location elements from the matrix path.
+    matrixes = matrixes.map(truncate);
+    let groups = [];
+
+    for(let i = 0; i < matrixes.length; i++) {
+      
+      let indicatorBit = matrixes[i][0];
+      let start = matrixes[i].slice(1);
+      let end = 0 === indicatorBit ? start.slice() : matrixes[++i].slice(1);
+
+      groups.push(start);
+      groups.push(end);
+    }
+
+    // WE SHOULD NOW BE WORKING WITH GROUPS!!!
+    // Use odd/even a method for solving a problem 
+
+    // We've consumed the indicator bit, so remove it.
+    groups = groups.map(m => m.slice(1));
+
+    // Also remove the chapter element, which is inferred from this context.
+    // groups = groups.map(m => {m.shift(); return m;});
+
+    // ID selectors can't start with a number; prepend with the given prefix.
+    groups = groups.map(m => { m.unshift(prefix); return m.join("-"); });
+
+    return groups.map((sel,index) => index % 2 == 0 ? ("#"+sel) : ("[id*='"+sel+"']"));
+  }
+
+
 
   /**
    * 
    * @param {String} sel1
    * @param {String} sel2 
    */
-  getRange(matrixStart, matrixEnd) {
+  getRange(sel1, sel2 = null) {
 
     let document = this.getDocumentNode();
-    let sel1 = "#section-" + matrixStart.join("-");
-    // Prepare a selector that will capture the last descendent of the end section.
-    let sel2 = "[id*='section-" + matrixEnd.join("-")+"']";
+
 
     let node1 = this.document.querySelector(sel1);
+    if(null == node1) {
+      throw new Error("Node not found for selector: "+sel1);
+    }
     let endNodes = [...this.document.querySelectorAll(sel2)];
     let node2 = endNodes[endNodes.length - 1];
 
     // Inclusive is passed as true to include the start and end nodes in the range.
     return document.getRangeBetweenSections(node1, node2, true);
   }
+
+
+
+
+  getNodes(selectors) {
+    let nodes = [];
+    // Loop through pairs of selectors calling getRange() for each pair.
+
+    for(let i = 0; i < selectors.length; i += 2) {
+      let range = this.getRange(selectors[i],selectors[i+1]);
+      nodes.push(range.cloneContents());
+    }
+
+    return nodes;
+  }
+
+
+
 
   // Outputs the document as an HTML string
   __toString() {
