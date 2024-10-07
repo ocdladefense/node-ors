@@ -313,7 +313,13 @@ export default class Chapter {
   }
 
 
+  toString() {
 
+    const serializer = new XMLSerializer();
+    const subset = this.document.querySelector(".WordSection1");
+
+    return serializer.serializeToString(subset);
+  }
 
   // Outputs the document as an HTML string
   __toString() {
