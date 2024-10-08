@@ -108,13 +108,17 @@ export default class Chapter {
 
 
 
-        
-        for(let sectionNumber in chapter.sectionTitles) {
+        /**
+         * Let's document what this code is trying to do.
+         */
+        /* for(let sectionNumber in chapter.sectionTitles) {
           let oldNode = chapter.document.getSection(sectionNumber).replaceWithNewNode();
           let node = chapter.document.getSection(sectionNumber);
           // console.log(node.toNode());
         }
-        
+        */
+
+
         // chapter.download();
           
 
@@ -171,6 +175,7 @@ export default class Chapter {
     // Remove leading and trailing whitespace from all <b> elements.
     // Also remove line breaks with spaces.
     this.document.trimAll("p");
+    this.document.trimAll("span", true);
     this.document.trimAll("b");
     this.document.trimAll("h2", true);
     this.document.replaceInnerHTMLString("p", "\n", " ");

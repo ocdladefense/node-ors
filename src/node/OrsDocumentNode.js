@@ -100,23 +100,25 @@ export default class OrsDocumentNode extends OrsNode {
       let start = sections[i];
       let end = sections[i + 1];
       let oHeading, nHeading;
-
+      let id = "section-" + start.getAttribute("data-section");
       let range = this.getRangeBetweenSections(start, end);
       let container = this.createElement("div");
-      container.setAttribute(
-        "id",
-        "section-" + sections[i].getAttribute("data-section")
-      );
+      container.setAttribute("id", id);
+      
       range.surroundContents(container);
 
       oHeading = container.querySelector("b");
+      console.log(oHeading);
       if(null == oHeading) {
         console.warn("Unable to find heading for section: ", sections[i], container);
         continue;
       }
       nHeading = this.createElement("h2");
       nHeading.appendChild(this.createTextNode(oHeading.innerText));
-      container.prepend(nHeading);
+
+      let nContainer = this.node.querySelector("#"+id);
+      console.log(nContainer);
+      nContainer.prepend(nHeading);
 
       oHeading.parentNode.removeChild(oHeading);
     }
