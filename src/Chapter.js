@@ -170,7 +170,7 @@ export default class Chapter {
     return this.document;
   }
 
-  processWhitespace() {
+  processWhitespace() {  
     // ORS titles are stuck in <b> elements that contain unecessary leading and trailing whitespace.
     // Remove leading and trailing whitespace from all <b> elements.
     // Also remove line breaks with spaces.
