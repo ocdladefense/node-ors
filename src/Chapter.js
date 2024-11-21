@@ -1,7 +1,7 @@
-import OrsDocumentNode from './OrsDocumentNode.js';
-import {Parser} from './Parser.js';
+import OrsDocumentNode from './node/OrsDocumentNode.js';
+import Matcher from './utility/Matcher.js';
 import ChapterInitPhases from './ChapterInitPhases.js';
-
+import {truncate} from './utility/Matrix.js';
 
 
 // Fetches the contents of the original ORS chapter from the Oregon Legislature web site.
@@ -49,6 +49,29 @@ export default class Chapter {
     this.title = title;
   }
 
+
+
+  async download() {
+
+      let html = this.document.node.documentElement.outerHTML;
+      console.log("HTML is: ", html);
+      // An array consisting of a single string.
+      const blobParts = [html];
+      const blob = new Blob(blobParts, { type: "text/html" }); // the blob
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = url;
+      // the filename you want
+      a.download = "ors-chapter-" + this.chapterNum + ".html";
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+  }
+
+
   /**
    *
    * @param {Response} resp
@@ -74,13 +97,26 @@ export default class Chapter {
         chapter.loadHtml(html);
         chapter.loadSectionMetadata();
         chapter.writeSectionAnchors();
-        chapter.wrapSections();
-        chapter.processWhitespace();
-        console.log(chapter.sectionTitles);
 
-        let oldNode = chapter.document.getSection(5).replaceWithNewNode();
-        console.log(oldNode);
-        console.log(chapter.document.getSection(5));
+        
+
+        chapter.wrapSections();
+
+        
+        chapter.processWhitespace();
+        // console.log(chapter.sectionTitles);
+
+
+
+        
+        for(let sectionNumber in chapter.sectionTitles) {
+          let oldNode = chapter.document.getSection(sectionNumber).replaceWithNewNode();
+          let node = chapter.document.getSection(sectionNumber);
+          // console.log(node.toNode());
+        }
+        
+        // chapter.download();
+          
 
         return chapter;
         chapter.init(
@@ -104,6 +140,23 @@ export default class Chapter {
       });
   }
 
+
+
+  querySelectorAll(selectors) {
+
+    let document = this.getDocumentNode();
+    console.log("Selector are: ",selectors);
+
+    let sections = document.querySelectorAll(selectors);
+    console.log("Sections are: ",sections);
+    // console.log("Section toString()", section.toString());
+    // console.log("Section getText()", section.getText());
+    if(null == sections || (sections.length && sections.length == 0)) {
+      console.warn("No sections found for selectors: ", selectors);
+    }
+    // let sections = [section.toNode()];
+    return [...sections];
+  }
 
   wrapSections() {
     this.document.wrapSections(".ors-anchor, .ors-end-of-chapter");
@@ -138,28 +191,31 @@ export default class Chapter {
   }
 
   loadSectionMetadata() {
-    this.sectionHeadings = [...this.document.querySelectorAll("b")];
+    this.sectionHeadings = [...this.document.querySelectorAll("b")].filter(n => !!n.textContent && n.textContent.trim().match(/^\d+\.\d+/));
+    
     let titles = this.sectionHeadings.map((node) => node.textContent.trim());
+
     this.metadata = titles.map(fn);
+
 
     this.metadata.forEach((triplet) => {
       let [chapter, section, title] = triplet;
       this.sectionTitles[section.toString()] = title;
     });
 
-    function fn(label) {
-      // Ignore some labels or at least take of them.
+    function fn(_title) {
+      // Ignore some labels that would otherwise be considered titles but *aren't titles.
       // For example, some labels start with "Note" and are not part of the statutes.
-      // if (label.indexOf("Note") === 0) return [99,99,"Amended"];
+      // if(label.indexOf("Note") === 0) return null; //return [99,99,"Amended"];
 
       // Distinguish between "138.010" and the title.
       // This helps to solve for the form: "138.010\nTitle of the statute".
-      let [enumeration, title] = label.split("\n");
+      let [enumeration, title] = _title.split("\n");
       let [chapter, section] = enumeration.split(".");
 
       // If val wasn't set then we know this doesn't follow the regular statute pattern.
       // val = boldParent.nextSibling ? boldParent.nextSibling.textContent : "";
-      return [parseInt(chapter), parseInt(section), title || "Amended"];
+      return [parseInt(chapter), parseInt(section), title || "Amended or Repealed"];
     }
   }
 
@@ -167,16 +223,106 @@ export default class Chapter {
     // Inserts anchors as <div> tags in the doc.
     // Note: this affects the underlying structure
     // of the XML document.
+    console.log("Metadata is: ", this.metadata);
+
     this.metadata.forEach((triplet, index) => {
       let [chapter, section, title] = triplet;
       let b = this.sectionHeadings[index];
       let anchor = this.document.createSectionAnchor(section);
       b.parentNode.parentNode.insertBefore(anchor, b.parentNode);
     });
+
+    console.log("Anchors added to the document.");
+    console.log(this.document.node);
+  }
+
+  
+
+
+  // Convert matrixes into DOMString selectors for use in document.querySelector().
+  // For now, selectors will largely consist of IDs.
+  // For example, "section-10-1" will select the first subsection of ORS 128.010
+  //   using the selector, "#section-10-1".
+  toSelectors(matrixes, prefix="section", type = "id", truncateNulls = true) {
+
+    // Remove unused (null) location elements from the matrix path.
+    matrixes = matrixes.map(truncate);
+    let groups = [];
+
+    for(let i = 0; i < matrixes.length; i++) {
+      
+      let indicatorBit = matrixes[i][0];
+      let start = matrixes[i].slice(1);
+      let end = 0 === indicatorBit ? start.slice() : matrixes[++i].slice(1);
+
+      groups.push(start);
+      groups.push(end);
+    }
+
+    // WE SHOULD NOW BE WORKING WITH GROUPS!!!
+    // Use odd/even a method for solving a problem 
+
+    // We've consumed the indicator bit, so remove it.
+    groups = groups.map(m => m.slice(1));
+
+    // Also remove the chapter element, which is inferred from this context.
+    // groups = groups.map(m => {m.shift(); return m;});
+
+    // ID selectors can't start with a number; prepend with the given prefix.
+    groups = groups.map(m => { m.unshift(prefix); return m.join("-"); });
+
+    return groups.map((sel,index) => index % 2 == 0 ? ("#"+sel) : ("[id*='"+sel+"']"));
+  }
+
+
+
+  /**
+   * 
+   * @param {String} sel1
+   * @param {String} sel2 
+   */
+  getRange(sel1, sel2 = null) {
+
+    let document = this.getDocumentNode();
+
+
+    let node1 = this.document.querySelector(sel1);
+    if(null == node1) {
+      throw new Error("Node not found for selector: "+sel1);
+    }
+    let endNodes = [...this.document.querySelectorAll(sel2)];
+    let node2 = endNodes[endNodes.length - 1];
+
+    // Inclusive is passed as true to include the start and end nodes in the range.
+    return document.getRangeBetweenSections(node1, node2, true);
+  }
+
+
+
+
+  getNodes(selectors) {
+    let nodes = [];
+    // Loop through pairs of selectors calling getRange() for each pair.
+
+    for(let i = 0; i < selectors.length; i += 2) {
+      let range = this.getRange(selectors[i],selectors[i+1]);
+      nodes.push(range.cloneContents());
+    }
+
+    return nodes;
+  }
+
+
+  toString() {
+
+    const serializer = new XMLSerializer();
+    const subset = this.document.querySelector(".WordSection1");
+
+    return serializer.serializeToString(subset);
   }
 
   // Outputs the document as an HTML string
-  toString() {
+  __toString() {
     let xml = this;
 
     let work = [
@@ -221,12 +367,12 @@ export default class Chapter {
       }
 
       for (let job of work) {
-        parser = new Parser(job.patterns);
+        parser = new Matcher(job.patterns);
         parser.replaceWith(job.replacer);
         html = parser.parse(html);
       }
 
-      frag = Parser.createDocumentFragment(html);
+      frag = Matcher.createDocumentFragment(html);
       node.parentNode.replaceChild(frag, node);
     }
     const serializer = new XMLSerializer();
